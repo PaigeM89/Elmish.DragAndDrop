@@ -9,7 +9,8 @@ open Fable.React.Props
 type Model = {
     /// The items that will be sorted via drag and drop.
     Items : string list
-    /// Store drag and drop model information within your model.
+    /// If there is an item currently being dragged and/or dropped,
+    /// state for that action is stored within this model.
     DragonDrop : DragAndDrop.Model
 } with
     static member Init() = {
@@ -50,23 +51,29 @@ let itemView (dnd : DragAndDrop.Model) index item (dispatch : Msg -> unit) =
     let dispatch = dndDispatch dispatch
     let itemId = "id-" + item |> String.filter(fun x -> x <> ' ')
     match dnd with
-    | Some dragInfo ->
-        if dragInfo.DragIndex <> index then
+    | Some dragState ->
+        if dragState.DragIndex <> index then
+            // if the current item is not the item being dragged, add events to listen for the item being dropped.
             let dropEvents : IHTMLProp list = (DragAndDrop.dropEvents (fun msg -> msg) (dispatch) index itemId)
             let id : IHTMLProp = HTMLAttr.Id itemId :> IHTMLProp
             p (id :: dropEvents) [str item]
         else
+            // Render the placeholder if the item is being hovered over this index.
             p [ HTMLAttr.Id itemId ] [ str "[-----------]" ]
     | None ->
+        // Get the events for drag & drop to add them to this item.
         let dragEvents = DragAndDrop.dragEvents id dispatch index itemId
         let id : IHTMLProp = HTMLAttr.Id itemId :> IHTMLProp
         p (id :: dragEvents) [ str item ]
 
 let view (model : Model) (dispatch : Msg -> unit) =
     let dndDispatch = dndDispatch dispatch
+    // add mouse listeners to track mouse movement & the item drag ending when the item is dropped.
     let listeners : IHTMLProp list = DragAndDrop.mouseListener dndDispatch model.DragonDrop
+    // Note that the map is done with the index.
     let items = model.Items |> List.mapi (fun i x -> itemView model.DragonDrop i x dispatch)
 
+    // render the items to be sorted in a section with mouse listeners
     section [
         Style [CSSProp.TextAlign TextAlignOptions.Center]
         yield! listeners
@@ -79,9 +86,9 @@ let update (msg : Msg) (model : Model) =
     match msg with
     | Initialize -> model, Cmd.none
     | DragonDrop dragMsg ->
-        /// The Drag And Drop update will return an updated DND model and a newly sorted list of items.
+        // The Drag And Drop update will return an updated DND model and a newly sorted list of items.
         let dnd, sortedItems = DragAndDrop.update config dragMsg model.DragonDrop model.Items
-        /// The commands from Drag And Drop need to be fetched separately.
+        // The commands from Drag And Drop need to be fetched separately.
         let cmds = DragAndDrop.commands DragonDrop dnd
         { model with DragonDrop = dnd; Items = sortedItems }, cmds
 

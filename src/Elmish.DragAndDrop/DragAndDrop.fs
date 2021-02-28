@@ -13,7 +13,7 @@ module Elmish.DragAndDrop
         Y : float
     }
 
-    let pos x y = {
+    let private pos x y = {
         X = x
         Y = y
     }
@@ -62,18 +62,17 @@ module Elmish.DragAndDrop
     | GotDragElement of Result<HTMLElement, exn >
     | GotDropElement of Result<HTMLElement, exn>
 
-    let px x = (string x) + "px"
+    let private px x = (string x) + "px"
 
-    let translate x y = "translate3d(" + px x + ", " + px y + ", 0)"
+    let private translate x y = "translate3d(" + px x + ", " + px y + ", 0)"
 
+    /// Stylize the floating ghost element.
     let ghostStyles movement (model : Model) : IHTMLProp list =
         match model with
         | None -> []
         | Some m ->
             match m.DragElement with
-            | None ->
-                printfn "dragging with no drag element"
-                []
+            | None -> []
             | Some x ->
                 let transform =
                     match movement with
@@ -109,20 +108,18 @@ module Elmish.DragAndDrop
         Operation : Operation
     }
 
-    let dragElementCommands stepMsg (dragState : DragState) =
+    let private dragElementCommands stepMsg (dragState : DragState) =
         match dragState.DragElement with
         | None ->
             let doc = Browser.Dom.document
             let ele = doc.getElementById(dragState.DragElementId)
-            printfn "setting drag element to %A" ele.id
             ele |> Ok |> GotDragElement |> stepMsg |> Cmd.ofMsg
         | _ -> Cmd.none
 
-    let dropElementCommands stepMsg dragState =
+    let private dropElementCommands stepMsg dragState =
         if dragState.DragCounter = 0 && dragState.DragElement.IsSome && dragState.DropElement.IsNone then
             let doc = Browser.Dom.document
             let ele = doc.getElementById(dragState.DropElementId)
-            printfn "setting drop element to %A" ele.id
             ele |> Ok |> GotDropElement |> stepMsg |> Cmd.ofMsg
         else
             Cmd.none
@@ -136,17 +133,19 @@ module Elmish.DragAndDrop
             ]
         | None -> Cmd.none
 
+    /// Creates mouse listeners for mouse up (when an item is released)
+    /// and mouse move (when the ghost item should move with the cursor)
     let mouseListener stepMsg (model : Model) : IHTMLProp list =
         match model with
         | Some m ->
             [
-                OnMouseMove (fun ev ->
-                    Drag { X = ev.pageX; Y = ev.pageY } |> stepMsg)
+                OnMouseMove (fun ev -> Drag { X = ev.pageX; Y = ev.pageY } |> stepMsg)
                 OnMouseUp (fun ev -> DragEnd |> stepMsg)
             ]
         | None -> []
 
 
+    /// Creates a mouse listener event to notify if an item is picked up to be dragged.
     let dragEvents stepMsg dispatch dragIndex dragElementId : IHTMLProp list =
         [
             DOMAttr.OnMouseDown (fun ev ->
@@ -158,16 +157,15 @@ module Elmish.DragAndDrop
             )
         ]
 
+    /// Creates events to listen for the mouse entering this index, or for the item being dropped on this index.
     let dropEvents (stepMsg: Msg -> Msg) dispatch dropIndex dropElementId : IHTMLProp list =
         [
-            DOMAttr.OnMouseOver (fun me ->
-                printfn "in mouse over"
-                (DragOver (dropIndex, dropElementId)) |> dispatch)
+            DOMAttr.OnMouseOver (fun me -> (DragOver (dropIndex, dropElementId)) |> dispatch)
             DOMAttr.OnMouseEnter (fun me -> stepMsg (DragEnter dropIndex) |> dispatch)
             DOMAttr.OnMouseLeave (fun me -> stepMsg DragLeave |> dispatch)
         ]
 
-    let modelUpdate operation dropIndex (model : DragState) =
+    let private modelUpdate operation dropIndex (model : DragState) =
         match operation with
 //        | InsertAfter ->
 //            { model with DragIndex = (if dropIndex < model.DragIndex then dropIndex + 1 else dropIndex); DragCounter = 0 }
@@ -180,7 +178,7 @@ module Elmish.DragAndDrop
             // the other items shift to accomodate it.
             { model with DragIndex = dropIndex; DragCounter = 0 }
 
-    let listUpdate op dragIndex dropIndex li =
+    let private listUpdate op dragIndex dropIndex li =
         match op with
         | Rotate ->
             let split i li =
@@ -204,6 +202,7 @@ module Elmish.DragAndDrop
             else
                 li
 
+    /// Update the Drag And Drop model state, and also return the newly sorted list of items.
     let update config msg model (li: 'a list) : (Model * 'a list)=
         match msg with
         | DragStart (dragIndex, dragElementId, { X = x; Y = y }) ->
