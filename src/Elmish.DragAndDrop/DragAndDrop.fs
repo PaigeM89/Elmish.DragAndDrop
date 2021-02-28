@@ -30,7 +30,7 @@ module Elmish.DragAndDrop
         DragElement: HTMLElement option
         DropElement: HTMLElement option
     }
-    // Will be 'none' if there is nothing currently being dragged
+    /// Will be 'none' if there is nothing currently being dragged
     type Model = DragState option
 
     type Movement =
@@ -109,34 +109,6 @@ module Elmish.DragAndDrop
         Operation : Operation
     }
 
-//    type Info = {
-//        DragIndex : DragIndex
-//        DropIndex : DropIndex
-//        StartPosition : Position
-//        CurrentPosition : Position
-//        DragElementId : DragElementId
-//        DropElementId : DropElementId
-//        DragElement : HTMLElement
-//        DropElement : HTMLElement
-//    }
-//
-//    let info (model : Model) =
-//        model |> Option.map(fun m ->
-//            Option.map2(fun dragElement dropElement ->
-//                {
-//                    DragIndex = m.DragIndex
-//                    DropIndex = m.DropIndex
-//                    DragElementId = m.DragElementId
-//                    DropElementId = m.DropElementId
-//                    DragElement = dragElement
-//                    DropElement = dropElement
-//                    StartPosition = m.StartPosition
-//                    CurrentPosition = m.CurrentPosition
-//                }
-//            ) m.DragElement m.DropElement
-//        ) |> Option.flatten
-
-
     let dragElementCommands stepMsg (dragState : DragState) =
         match dragState.DragElement with
         | None ->
@@ -210,35 +182,6 @@ module Elmish.DragAndDrop
 
     let listUpdate op dragIndex dropIndex li =
         match op with
-//        | InsertAfter ->
-//            if dragIndex < dropIndex then
-//                let beginning, rest = List.splitAt (dropIndex + 1) li
-//                let middle, _end = List.splitAt (dragIndex - dropIndex - 1) rest
-//                let head, tail = List.splitAt 1 _end
-//                beginning @ head @ middle @ tail
-//            else if dropIndex < dragIndex then
-//                let beginning, rest = List.splitAt (dropIndex + 1) li
-//                let middle, _end = List.splitAt (dragIndex - dropIndex - 1) rest
-//                let head, tail = List.splitAt 1 _end
-//                beginning @ head @ middle @ tail
-//            else li
-//        | InsertBefore ->
-//            printfn "inserting before"
-//            if dragIndex < dropIndex then
-//                let beginning, rest = List.splitAt dragIndex li
-//                let middle, _end = List.splitAt (dropIndex - dragIndex) rest
-//                let head, tail = List.splitAt 1 middle
-//                let li' = beginning @ tail @ head @ _end
-//                printfn "List before: %A.\nList After: %A" li li'
-//                li'
-//            else if dropIndex < dragIndex then
-//                let beginning, rest = List.splitAt dragIndex li
-//                let middle, _end = List.splitAt (dragIndex - dropIndex - 1) rest
-//                let head, tail = List.splitAt 1 _end
-//                let li' = beginning @ head @ middle @ tail
-//                printfn "List before: %A.\nList After: %A" li li'
-//                li'
-//            else li
         | Rotate ->
             let split i li =
                 let len x = List.length x
@@ -246,10 +189,8 @@ module Elmish.DragAndDrop
                     if len li > i then List.take i li else li
                 let second =
                     if len li <= i then [] else  List.skip i li
-
                 first,second
 
-            printfn "in rotate; drag index is %A and drop index is %A\n" dragIndex dropIndex
             if dragIndex < dropIndex then
                 let beginning, rest = split dragIndex li
                 let middle, _end = split (dropIndex - dragIndex + 1) rest
@@ -259,20 +200,15 @@ module Elmish.DragAndDrop
                 let beginning, rest = split dropIndex li
                 let middle, _end = split (dragIndex - dropIndex) rest
                 let head, tail = split 1 _end
-                let li' = beginning @ head @ middle @ tail
-                printfn "List before: %A.\nList After: %A\n" li li'
-                li'
+                beginning @ head @ middle @ tail
             else
                 li
 
     let update config msg model (li: 'a list) : (Model * 'a list)=
-        //printfn "update in library. msg is %A model is %A config is %A list is %A" msg model config li
         match msg with
         | DragStart (dragIndex, dragElementId, { X = x; Y = y }) ->
-            printfn "drag start, drag index is %A, drag element ID is %A" dragIndex dragElementId
             {
                 DragIndex = dragIndex
-                //HoverIndex = dragIndex
                 DropIndex = dragIndex
                 DragCounter = 0
                 StartPosition = pos x y
@@ -285,13 +221,10 @@ module Elmish.DragAndDrop
         | Drag { X = x ; Y = y } ->
             model |> Option.map(fun m -> { m with CurrentPosition = pos x y; DragCounter = m.DragCounter + 1 }), li
         | DragOver (dropIndex, dropElementId) ->
-            printfn "drag over, drop index is %A" dropIndex
             model |> Option.map(fun m -> { m with DropIndex = dropIndex; DropElementId = dropElementId }), li
         | DragEnter dropIndex ->
-            printfn "drag enter"
             match model, config.Listen with
             | Some m, OnDrag ->
-                printfn "listening on drag, dragindex is %A, dropindex is %A" m.DragIndex dropIndex //m.HoverIndex
                 if m.DragCounter > 1 && m.DragIndex <> dropIndex then
                     let m' = m |> modelUpdate config.Operation dropIndex |> Some
                     let newList =
@@ -303,55 +236,24 @@ module Elmish.DragAndDrop
                     model, li
             | _ -> model |> Option.map (fun x -> { x with DragCounter = 0 }), li
         | DragLeave ->
-            printfn "drag leave"
-            // was drag index
             model |> Option.map(fun m -> { m with DropIndex = m.DragIndex }), li
         | DragEnd ->
-            printfn "drag end. model is %A" model
             match model, config.Listen with
             | Some m, OnDrop ->
-                printfn "dragindex is %A, dropindex is %A" m.DragIndex m.DropIndex
                 if m.DragIndex <> m.DropIndex then
                     let newList =
                         li
                         |> config.BeforeUpdate m.DragIndex m.DropIndex
                         |> listUpdate config.Operation m.DragIndex m.DropIndex
-                    printfn "list is %A, newList is %A" li newList
                     None, newList
                 else
                     None, li
             | _ -> None, li
         | GotDragElement (Ok ele) ->
-            printfn "got drag element"
             model |> Option.map(fun m -> { m with DragElement = Some ele; DropElement = Some ele }), li
         | GotDragElement (Error e) ->
-            printfn "got drag element error: %A" e
             model, li
         | GotDropElement (Ok ele) ->
-            printfn "got drop element"
             model |> Option.map(fun m -> { m with DropElement = Some ele }), li
         | GotDropElement (Error e) ->
-            printfn "got drop element error: %A" e
             model, li
-
-
-
-//    type System<'a, 'm> =
-//        {
-//            Model : Model
-////            //Subscriptions : Model -> Sub 'msg
-//            Commands : Model -> Cmd<'m>
-//            Update : 'm -> Model -> 'a list -> (Model * 'a list)
-//            DragEvents : DragIndex -> DragElementId -> (DOMAttr) list
-//            DropEvents : DropIndex -> DropElementId -> (DOMAttr) list
-////            GhostStyles : Model -> (Html.Attribute msg) list
-//            Info : Model -> Info option
-//        } with
-//            static member Create<'a> config dispatch (stepMsg : Msg -> 'a) = {
-//                Model = None
-//                Commands = commands stepMsg
-//                Update = update config
-//                DragEvents = dragEvents stepMsg dispatch
-//                DropEvents = dropEvents stepMsg dispatch
-//                Info = info
-//            }

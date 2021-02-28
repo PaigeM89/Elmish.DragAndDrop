@@ -7,7 +7,9 @@ open Fable.React.Props
 
 
 type Model = {
+    /// The items that will be sorted via drag and drop.
     Items : string list
+    /// Store drag and drop model information within your model.
     DragonDrop : DragAndDrop.Model
 } with
     static member Init() = {
@@ -17,11 +19,14 @@ type Model = {
 
 type Msg =
 | Initialize
+/// Handle & dispatch Drag And Drop messages
 | DragonDrop of DragAndDrop.Msg
 
-let wrapDND dispatch = fun m -> DragonDrop m |> dispatch
+/// Helper function to dispatch Drag And Drop messages to this message handler.
 let dndDispatch (dispatch: Msg -> unit) = (fun (m : DragAndDrop.Msg) -> DragonDrop m |> dispatch)
 
+/// Configuration for Drag And Drop functionality. This could be stored in the Model, but
+/// that wasn't needed for the example.
 let config = {
     DragAndDrop.BeforeUpdate = (fun dragIndex dropIndex li -> li)
     DragAndDrop.Movement = DragAndDrop.Movement.Free
@@ -29,6 +34,7 @@ let config = {
     DragAndDrop.Operation = DragAndDrop.Operation.Rotate
 }
 
+/// Draw the item currently being moved.
 let ghostView (dnd : DragAndDrop.Model) items =
     let mabyeDragItem =
         dnd
@@ -73,7 +79,9 @@ let update (msg : Msg) (model : Model) =
     match msg with
     | Initialize -> model, Cmd.none
     | DragonDrop dragMsg ->
+        /// The Drag And Drop update will return an updated DND model and a newly sorted list of items.
         let dnd, sortedItems = DragAndDrop.update config dragMsg model.DragonDrop model.Items
+        /// The commands from Drag And Drop need to be fetched separately.
         let cmds = DragAndDrop.commands DragonDrop dnd
         { model with DragonDrop = dnd; Items = sortedItems }, cmds
 
