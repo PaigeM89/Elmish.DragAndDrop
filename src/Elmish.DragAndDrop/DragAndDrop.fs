@@ -1,12 +1,7 @@
 module Elmish.DragAndDrop
 
-    open System.Net
-    open Fable.Core
-    open Browser.Dom
-    open Browser.DomExtensions
     open Browser.Types
     open Fable.React.Props
-    open Fable.React.ReactiveComponents
 
     type DragIndex = int
     type DropIndex = int
@@ -38,11 +33,21 @@ module Elmish.DragAndDrop
     // Will be 'none' if there is nothing currently being dragged
     type Model = DragState option
 
-    type Movement = | Free | Horizontal | Vertical
+    type Movement =
+    /// The ghost element follows the cursor
+    | Free
+    /// The ghost element follows the cursor but only moves horizontally
+    | Horizontal
+    /// The ghost element follows the cursor but only moves vertically.
+    | Vertical
+
     type Listen = | OnDrag | OnDrop
+    // Rotate covers the most common use case for drag-and-drop sorting.
     type Operation =
-    | InsertAfter
-    | InsertBefore
+//    | InsertAfter
+//    | InsertBefore
+    /// Shifts elements to accomodate the dropped element. The shifted element will
+    /// move towards the lower index, unless it is the 0th element, which will shift to the 1st index.
     | Rotate
 //    | Swap
 //    | Unaltered
@@ -59,8 +64,7 @@ module Elmish.DragAndDrop
 
     let px x = (string x) + "px"
 
-    let translate x y =
-        "translate3d(" + px x + ", " + px y + ", 0)"
+    let translate x y = "translate3d(" + px x + ", " + px y + ", 0)"
 
     let ghostStyles movement (model : Model) : IHTMLProp list =
         match model with
@@ -74,18 +78,18 @@ module Elmish.DragAndDrop
                 let transform =
                     match movement with
                     | Horizontal ->
-                        let z = x.clientTop - x.offsetTop
-                        CSSProp.Transform (translate (m.CurrentPosition.X - m.StartPosition.X) (z))
+                        let rect  = x.getBoundingClientRect()
+                        let y = rect.top - rect.height
+                        CSSProp.Transform (translate (m.CurrentPosition.X - m.StartPosition.X + rect.left ) (y))
                     | Vertical ->
                         let rect  = x.getBoundingClientRect()
-                        let z = x.clientTop - x.offsetTop
-                        let diff = rect.left
-                        CSSProp.Transform (translate (diff) (m.CurrentPosition.Y - m.StartPosition.Y - rect.top ))
+                        let x = rect.left
+                        CSSProp.Transform (translate (x) (m.CurrentPosition.Y))
                     | Free ->
-                        let trans = CSSProp.Transform (translate (m.CurrentPosition.X - m.StartPosition.X) (m.CurrentPosition.Y - m.StartPosition.Y))
-                        printfn "transform is %A" trans
-                        trans
-                printfn "transform is %A" transform
+                        let rect = x.getBoundingClientRect()
+                        let x = m.CurrentPosition.X - m.StartPosition.X + rect.left
+                        let y = rect.top - rect.height
+                        CSSProp.Transform (translate x (m.CurrentPosition.Y) )
                 let baseStyles = Style [
                     CSSProp.Position PositionOptions.Fixed
                     CSSProp.Top "0"
@@ -140,7 +144,6 @@ module Elmish.DragAndDrop
             let ele = doc.getElementById(dragState.DragElementId)
             printfn "setting drag element to %A" ele.id
             ele |> Ok |> GotDragElement |> stepMsg |> Cmd.ofMsg
-            //Cmd.none
         | _ -> Cmd.none
 
     let dropElementCommands stepMsg dragState =
@@ -149,7 +152,6 @@ module Elmish.DragAndDrop
             let ele = doc.getElementById(dragState.DropElementId)
             printfn "setting drop element to %A" ele.id
             ele |> Ok |> GotDropElement |> stepMsg |> Cmd.ofMsg
-            //Cmd.none
         else
             Cmd.none
 
@@ -195,10 +197,10 @@ module Elmish.DragAndDrop
 
     let modelUpdate operation dropIndex (model : DragState) =
         match operation with
-        | InsertAfter ->
-            { model with DragIndex = (if dropIndex < model.DragIndex then dropIndex + 1 else dropIndex); DragCounter = 0 }
-        | InsertBefore ->
-            { model with DragIndex = (if dropIndex < model.DragIndex then dropIndex - 1 else dropIndex); DragCounter = 0 }
+//        | InsertAfter ->
+//            { model with DragIndex = (if dropIndex < model.DragIndex then dropIndex + 1 else dropIndex); DragCounter = 0 }
+//        | InsertBefore ->
+//            { model with DragIndex = (if dropIndex < model.DragIndex then dropIndex - 1 else dropIndex); DragCounter = 0 }
         | Rotate ->
             // the drag index updates here because entering a new cell makes that cell
             // the "origin" for the item.
@@ -208,35 +210,35 @@ module Elmish.DragAndDrop
 
     let listUpdate op dragIndex dropIndex li =
         match op with
-        | InsertAfter ->
-            if dragIndex < dropIndex then
-                let beginning, rest = List.splitAt (dropIndex + 1) li
-                let middle, _end = List.splitAt (dragIndex - dropIndex - 1) rest
-                let head, tail = List.splitAt 1 _end
-                beginning @ head @ middle @ tail
-            else if dropIndex < dragIndex then
-                let beginning, rest = List.splitAt (dropIndex + 1) li
-                let middle, _end = List.splitAt (dragIndex - dropIndex - 1) rest
-                let head, tail = List.splitAt 1 _end
-                beginning @ head @ middle @ tail
-            else li
-        | InsertBefore ->
-            printfn "inserting before"
-            if dragIndex < dropIndex then
-                let beginning, rest = List.splitAt dragIndex li
-                let middle, _end = List.splitAt (dropIndex - dragIndex) rest
-                let head, tail = List.splitAt 1 middle
-                let li' = beginning @ tail @ head @ _end
-                printfn "List before: %A.\nList After: %A" li li'
-                li'
-            else if dropIndex < dragIndex then
-                let beginning, rest = List.splitAt dragIndex li
-                let middle, _end = List.splitAt (dragIndex - dropIndex - 1) rest
-                let head, tail = List.splitAt 1 _end
-                let li' = beginning @ head @ middle @ tail
-                printfn "List before: %A.\nList After: %A" li li'
-                li'
-            else li
+//        | InsertAfter ->
+//            if dragIndex < dropIndex then
+//                let beginning, rest = List.splitAt (dropIndex + 1) li
+//                let middle, _end = List.splitAt (dragIndex - dropIndex - 1) rest
+//                let head, tail = List.splitAt 1 _end
+//                beginning @ head @ middle @ tail
+//            else if dropIndex < dragIndex then
+//                let beginning, rest = List.splitAt (dropIndex + 1) li
+//                let middle, _end = List.splitAt (dragIndex - dropIndex - 1) rest
+//                let head, tail = List.splitAt 1 _end
+//                beginning @ head @ middle @ tail
+//            else li
+//        | InsertBefore ->
+//            printfn "inserting before"
+//            if dragIndex < dropIndex then
+//                let beginning, rest = List.splitAt dragIndex li
+//                let middle, _end = List.splitAt (dropIndex - dragIndex) rest
+//                let head, tail = List.splitAt 1 middle
+//                let li' = beginning @ tail @ head @ _end
+//                printfn "List before: %A.\nList After: %A" li li'
+//                li'
+//            else if dropIndex < dragIndex then
+//                let beginning, rest = List.splitAt dragIndex li
+//                let middle, _end = List.splitAt (dragIndex - dropIndex - 1) rest
+//                let head, tail = List.splitAt 1 _end
+//                let li' = beginning @ head @ middle @ tail
+//                printfn "List before: %A.\nList After: %A" li li'
+//                li'
+//            else li
         | Rotate ->
             let split i li =
                 let len x = List.length x

@@ -1,9 +1,7 @@
 module App
 
-open Browser.Dom
 open Elmish
 open Elmish.React
-open Fable
 open Fable.React
 open Fable.React.Props
 
@@ -44,7 +42,7 @@ let ghostView (dnd : DragAndDrop.Model) items =
 
 let itemView (dnd : DragAndDrop.Model) index item (dispatch : Msg -> unit) =
     let dispatch = dndDispatch dispatch
-    let itemId = "id-" + item
+    let itemId = "id-" + item |> String.filter(fun x -> x <> ' ')
     match dnd with
     | Some dragInfo ->
         if dragInfo.DragIndex <> index then
