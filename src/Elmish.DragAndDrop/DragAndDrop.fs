@@ -44,13 +44,12 @@ module Elmish.DragAndDrop
     type Listen = | OnDrag | OnDrop
     // Rotate covers the most common use case for drag-and-drop sorting.
     type Operation =
-//    | InsertAfter
-//    | InsertBefore
     /// Shifts elements to accomodate the dropped element. The shifted element will
     /// move towards the lower index, unless it is the 0th element, which will shift to the 1st index.
     | Rotate
+//    | InsertAfter
+//    | InsertBefore
 //    | Swap
-//    | Unaltered
 
     type Msg =
     | DragStart of DragIndex * DragElementId * Position
@@ -178,7 +177,9 @@ module Elmish.DragAndDrop
             // the other items shift to accomodate it.
             { model with DragIndex = dropIndex; DragCounter = 0 }
 
-    let private listUpdate op dragIndex dropIndex li =
+    /// Updates the list based on the Operation given.
+    /// Made public for unit testing. This function is called during the `update`.
+    let listUpdate op dragIndex dropIndex li =
         match op with
         | Rotate ->
             let split i li =

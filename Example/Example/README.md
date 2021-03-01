@@ -1,8 +1,5 @@
 # Fable Minimal App
 
-take out of package.json:
-//"start": "dotnet fable watch src --run webpack-dev-server"
-
 This is a small Fable app project so you can easily get started and add your own code easily in it.
 
 ## Requirements

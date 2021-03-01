@@ -42,6 +42,7 @@ let ghostView (dnd : DragAndDrop.Model) items =
         |> Option.map (fun { DragIndex = dragIndex} -> items |> List.skip dragIndex |> List.head )
     match mabyeDragItem with
     | Some item ->
+        // The ghost styles will move the item relative to the cursor based on the Movement option you configured.
         div (DragAndDrop.ghostStyles config.Movement dnd) [ str item ]
     | None ->
         str ""
