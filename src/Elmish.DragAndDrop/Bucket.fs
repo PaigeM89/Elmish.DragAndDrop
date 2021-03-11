@@ -1,11 +1,16 @@
-module Elmish.DragAndDrop.ListSorting
+module Elmish.DragAndDrop.Bucket
 
-open Elmish
+open System
 open Browser.Types
+open Elmish.DragAndDrop
 open Fable.React.Props
+open Elmish
 
 type DragIndex = int
-type DropIndex = int
+type DropIndex =
+| ListDrop of int
+| BucketDrop
+
 type DragElementId = string
 type DropElementId = string
 
@@ -19,6 +24,14 @@ let private pos x y = {
     Y = y
 }
 
+/// Internal type to track if the item is being dropped into the list
+/// or into a new section
+type DropInto =
+/// The item is being dropped into the same list it originated in
+| SameList
+/// The item is being dropped into a different section.
+| Bucket
+
 type DragState = {
     DragIndex : DragIndex
     DropIndex : DropIndex
@@ -29,10 +42,14 @@ type DragState = {
     DropElementId : DropElementId
     DragElement: HTMLElement option
     DropElement: HTMLElement option
+    /// Define a section to drop items into.
+    /// This is useful to move items elsewhere, such as "save for later" for a shopping cart.
+    DropInto : DropInto
 }
 
 /// Will be 'none' if there is nothing currently being dragged
 type Model = DragState option
+let isDragActive (m : Model) = Option.isSome m
 
 type Movement =
 /// The ghost element follows the cursor
@@ -62,6 +79,7 @@ type Msg =
 | DragLeave
 | DragLeaveDropSection
 | DragEnd
+//| DragBucketDrop of fn : 'a -> ()
 | GotDragElement of Result<HTMLElement, exn>
 | GotDropElement of Result<HTMLElement, exn>
 
@@ -142,9 +160,8 @@ let mouseListener dispatch (model : Model) : IHTMLProp list =
     match model with
     | Some m ->
         [
-            OnMouseMove (fun ev ->
-                Drag { X = ev.pageX; Y = ev.pageY } |> dispatch)
-            OnMouseUp (fun ev -> DragEnd |> dispatch)
+            OnMouseMove (fun ev -> Drag { X = ev.pageX; Y = ev.pageY } |> dispatch)
+            OnMouseUp (fun ev -> printfn "dispatch drag end"; DragEnd |> dispatch)
         ]
     | None -> []
 
@@ -161,19 +178,34 @@ let dragEvents dispatch dragIndex dragElementId : IHTMLProp list =
     ]
 
 /// Creates events to listen for the mouse entering this index, or for the item being dropped on this index.
-let dropEvents dispatch dropIndex dropElementId : IHTMLProp list =
-    [
-        DOMAttr.OnMouseOver (fun me -> (DragOver (dropIndex, dropElementId)) |> dispatch)
-        DOMAttr.OnMouseEnter (fun me -> (DragEnter dropIndex) |> dispatch)
-        DOMAttr.OnMouseLeave (fun me ->  DragLeave |> dispatch)
-    ]
+let dropEvents model dispatch dropIndex dropElementId : IHTMLProp list =
+    if Option.isSome model then
+        [
+            DOMAttr.OnMouseOver (fun me -> DragOver (dropIndex, dropElementId) |> dispatch)
+            DOMAttr.OnMouseEnter (fun me -> (DragEnter dropIndex) |> dispatch)
+            DOMAttr.OnMouseLeave (fun me ->  DragLeave |> dispatch)
+        ]
+    else []
+
+/// Creates mouse listeners to listen for mouse events on a bucket.
+/// This contains the regular mouseListener events, but with an added function to handle a dropped item, as well as
+/// other specific bucket listeners.
+let bucketListeners (model : Model) (dispatch : Msg -> unit) (dropElementId : string) (onDrop) : IHTMLProp list =
+    match model with
+    | Some m ->
+        [
+            OnMouseMove (fun ev -> Drag { X = ev.pageX; Y = ev.pageY } |> dispatch)
+            OnMouseUp (fun ev -> 
+                //DragBucketDrop (onDrop) |> dispatch)
+                printfn "dispatch drag end"; onDrop (m.DragIndex); DragEnd |> dispatch
+            )
+            OnMouseOver (fun me -> DragOverDropSection dropElementId |> dispatch )
+            OnMouseLeave (fun me -> DragLeaveDropSection |> dispatch)
+        ]
+    | None -> []
 
 let private modelUpdate operation dropIndex (model : DragState) =
     match operation with
-//        | InsertAfter ->
-//            { model with DragIndex = (if dropIndex < model.DragIndex then dropIndex + 1 else dropIndex); DragCounter = 0 }
-//        | InsertBefore ->
-//            { model with DragIndex = (if dropIndex < model.DragIndex then dropIndex - 1 else dropIndex); DragCounter = 0 }
     | Rotate ->
         // the drag index updates here because entering a new cell makes that cell
         // the "origin" for the item.
@@ -207,13 +239,25 @@ let listUpdate op dragIndex dropIndex li =
         else
             li
 
+/// Removes the element with the given DragIndex from the list
+/// This is called when updating the list due to an item hovering over or entering
+/// the drop bucket and is only visible for unit testing.
+let listRemove dragIndex li =
+    let len x = List.length x
+    if len li >= dragIndex then
+        let h = List.take dragIndex li
+        let t = List.skip (dragIndex + 1) li
+        h @ t
+    else
+        li
+
 /// Update the Drag And Drop model state, and also return the newly sorted list of items.
 let update config msg model (li: 'a list) : (Model * 'a list)=
     match msg with
     | DragStart (dragIndex, dragElementId, { X = x; Y = y }) ->
         {
             DragIndex = dragIndex
-            DropIndex = dragIndex
+            DropIndex = ListDrop dragIndex
             DragCounter = 0
             StartPosition = pos x y
             CurrentPosition = pos x y
@@ -221,42 +265,91 @@ let update config msg model (li: 'a list) : (Model * 'a list)=
             DropElementId = dragElementId
             DragElement = None
             DropElement = None
+            DropInto = SameList
         } |> Some, li
     | Drag { X = x ; Y = y } ->
         model |> Option.map(fun m -> { m with CurrentPosition = pos x y; DragCounter = m.DragCounter + 1 }), li
     | DragOver (dropIndex, dropElementId) ->
         model |> Option.map(fun m -> { m with DropIndex = dropIndex; DropElementId = dropElementId }), li
     | DragOverDropSection dropElementId ->
-        model |> Option.map(fun m -> { m with DropElementId = dropElementId }), li
-    | DragEnter dropIndex ->
-        match model, config.Listen with
+        match model with
+        | Some { DragIndex = di } ->
+            model |> Option.map(fun m -> { m with DropElementId = dropElementId; DropInto = Bucket }), li
+        | None ->
+            model |> Option.map(fun m -> { m with DropElementId = dropElementId; DropInto = Bucket }), li
+    | DragEnter (ListDrop dropIndex) ->
+        match model,  config.Listen with
         | Some m, OnDrag ->
             if m.DragCounter > 1 && m.DragIndex <> dropIndex then
                 let m' = m |> modelUpdate config.Operation dropIndex |> Some
                 let newList =
                     li
-                    |> config.BeforeUpdate m.DragIndex dropIndex
+                    |> config.BeforeUpdate m.DragIndex (ListDrop dropIndex)
                     |> listUpdate config.Operation m.DragIndex dropIndex
                 m', newList
             else
                 model, li
         | _ -> model |> Option.map (fun x -> { x with DragCounter = 0 }), li
+    | DragEnter (BucketDrop) ->
+        match model, config.Listen with
+        | Some m, OnDrag ->
+            if m.DragCounter > 1 then
+                let newList =
+                    li
+                    |> config.BeforeUpdate m.DragIndex (BucketDrop)
+                    |> listRemove m.DragIndex
+                Some m, newList
+            else
+                model, li
+        | _ -> model |> Option.map (fun x -> { x with DragCounter = 0 }), li
     | DragLeave ->
-        model |> Option.map(fun m -> { m with DropIndex = m.DragIndex }), li
+        model |> Option.map(fun m -> { m with DropIndex = ListDrop m.DragIndex }), li
     | DragLeaveDropSection ->
-        model |> Option.map(fun m -> { m with DropIndex = m.DragIndex }), li
+        model |> Option.map(fun m -> { m with DropIndex = BucketDrop; DropInto = SameList }), li
     | DragEnd ->
         match model, config.Listen with
         | Some m, OnDrop ->
-            if m.DragIndex <> m.DropIndex then
+            match m.DropIndex with
+            | ListDrop di ->
+                if m.DragIndex <> di then
+                    let newList =
+                        li
+                        |> config.BeforeUpdate m.DragIndex m.DropIndex
+                        |> listUpdate config.Operation m.DragIndex di
+                    None, newList
+                else
+                    None, li
+            | BucketDrop ->
                 let newList =
                     li
                     |> config.BeforeUpdate m.DragIndex m.DropIndex
-                    |> listUpdate config.Operation m.DragIndex m.DropIndex
+                    |> listRemove m.DragIndex
                 None, newList
-            else
-                None, li
+        | Some m, OnDrag ->
+            match m.DropInto with
+            | DropInto.Bucket ->
+                printfn "drag end with bucket drop"
+                let newList =
+                    li
+                    |> config.BeforeUpdate m.DragIndex m.DropIndex
+                    |> listRemove m.DragIndex
+                None, newList
+            | _ -> None, li
         | _ -> None, li
+    // | DragBucketDrop fn ->
+    //     match model with
+    //     | Some m ->
+    //         match m.DropIndex with
+    //         | BucketDrop ->
+    //             let removedItem = li.[m.DragIndex]
+    //             let newList =
+    //                 li
+    //                 |> config.BeforeUpdate m.DragIndex m.DropIndex
+    //                 |> listRemove m.DragIndex
+    //             fn removedItem
+    //             None, newList
+    //         | _ -> None, li
+    //     | _ -> None, li
     | GotDragElement (Ok ele) ->
         model |> Option.map(fun m -> { m with DragElement = Some ele; DropElement = Some ele }), li
     | GotDragElement (Error e) ->
@@ -272,3 +365,16 @@ let tryGetDraggedItem (model : Model) (items: 'a list) =
     | Some { DragIndex = dragIndex} ->
         items |> List.skip dragIndex |> List.tryHead
     | None -> None
+
+/// Returns TRUE if the index is the currently dragged item
+let isDraggedItemByIndex model index =
+    match model with
+    | Some {DragIndex = di} -> di = index
+    | None -> false
+
+/// Returns the element ID of the bucket the item is hovered over, or None.
+let tryGetDropBucketId model =
+    match model with
+    | Some { DropInto = Bucket; DropElementId = deId } -> Some deId
+    | _ -> None
+

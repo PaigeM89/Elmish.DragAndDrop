@@ -2,8 +2,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
+      <IsPackable>false</IsPackable>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="Pages\ListSorting.fs" />      
+    <Compile Include="Pages\Bucket.fs" />
     <Compile Include="App.fs" />
   </ItemGroup>
   <ItemGroup>

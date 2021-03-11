@@ -3,14 +3,14 @@ namespace Elmish.DragAndDrop.Tests
 open System
 open Elmish
 open Expecto
-open Elmish.DragAndDrop
 
 module ListUpdateTests =
+    open Elmish.DragAndDrop.List
 
     let li = [ "item 1" ; "item 2"; "item 3"; "item 4" ]
 
     let rotate dragIndex dropIndex li =
-        DragAndDrop.listUpdate Rotate dragIndex dropIndex li
+        DragAndDrop.List.listUpdate Rotate dragIndex dropIndex li
 
     [<Tests>]
     let tests =
@@ -45,4 +45,33 @@ module ListUpdateTests =
                     let expected = [ "item 2"; "item 1" ]
                     Expect.equal output expected "List of 2 items should allow swapping."
             ]
+        ]
+
+module ListRemoveTests =
+    open Elmish.DragAndDrop.Bucket
+
+    let li = [ "item 1"; "item 2"; "item 3"; "item 4" ]
+
+    let remove dragIndex li =
+        DragAndDrop.Bucket.listRemove dragIndex li
+
+    [<Tests>]
+    let tests =
+        testList "List Remove tests" [
+            testCase "Removing [0] item removes that item" <| fun _ ->
+                let output = remove 0 li
+                let expected = [ "item 2"; "item 3"; "item 4" ]
+                Expect.equal output expected "Did not remove expected item."
+            testCase "Remove [1] item removes that item" <| fun _ ->
+                let output = remove 1 li
+                let expected = [ "item 1"; "item 3"; "item 4" ]
+                Expect.equal output expected "Did not remove expected item."
+            testCase "Remove [2] item removes that item" <| fun _ ->
+                let output = remove 2 li
+                let expected = [ "item 1"; "item 2"; "item 4" ]
+                Expect.equal output expected "Did not remove expected item."
+            testCase "Removing [3] item removes that item" <| fun _ ->
+                let output = remove 3 li
+                let expected = [ "item 1"; "item 2"; "item 3" ]
+                Expect.equal output expected "Did not remove expected item."
         ]
