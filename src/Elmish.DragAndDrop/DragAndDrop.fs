@@ -352,6 +352,12 @@ module ExternalHelpers =
             (di = index) && (sb = bucketIndex)
         | None -> false
 
+    let tryGetDraggedItemIndex model bucketIndex =
+        match model with
+        | Some { DragIndex = di; StartBucket = sb} when sb = bucketIndex->
+            Some di
+        | _ -> None
+
     /// Returns TRUE if the index & bucket is the item currently being hovered over.
     let isHoverIndex model index bucketIndex =
         match model with

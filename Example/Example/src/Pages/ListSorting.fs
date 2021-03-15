@@ -173,7 +173,7 @@ let update (msg : Msg) (model : Model) =
         // The Drag And Drop update will return an updated DND model and a newly sorted list of items.
         let cat = model.Categories.[categoryIndex]
         let dnd, sortedItems = DragAndDrop.update config dragMsg model.DragAndDrop cat.Items
-        let cat = { cat with Items = sortedItems } // DragAndDrop = dnd }
+        let cat = { cat with Items = sortedItems }
         let cats = model.Categories |> Map.replace cat categoryIndex
         // The commands from Drag And Drop need to be fetched separately.
         let cmd = getCommands dnd |> Cmd.map (fun x -> DragAndDropMsg (categoryIndex, x))
@@ -181,11 +181,13 @@ let update (msg : Msg) (model : Model) =
     | BucketChange (startCatIndex, startIndex, newCatIndex) ->
         printfn "bucket change, sb : %A si %A nb %A" startCatIndex startIndex newCatIndex
         let cat = tryGetCategory model startCatIndex
-        let originalIndex = tryGetOriginalDragIndex model.DragAndDrop
+        let originalIndex = tryGetDraggedItemIndex model.DragAndDrop (Some startCatIndex)
         match cat, originalIndex with
         | Some cat, Some originalIndex ->
             let itemToMove = List.tryItem originalIndex cat.Items
+            printfn "original index is %A" originalIndex
             let item = itemToMove |> Option.defaultValue "error: item not found"
+            printfn "Item being moved is %A" item
             let oldCat = { cat with Items = List.remove originalIndex cat.Items }
             let newCat = model.Categories.[newCatIndex]
             let newCat = { newCat with Items = item :: newCat.Items }
