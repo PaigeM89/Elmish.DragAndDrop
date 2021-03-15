@@ -5,8 +5,8 @@
       <IsPackable>false</IsPackable>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="Pages\ListSorting.fs" />      
-    <Compile Include="Pages\Bucket.fs" />
+    <!-- <Compile Include="Pages\Simple.fs" />   -->
+    <Compile Include="Pages\ListSorting.fs" />
     <Compile Include="App.fs" />
   </ItemGroup>
   <ItemGroup>

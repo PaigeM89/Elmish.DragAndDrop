@@ -24,7 +24,6 @@
   <ItemGroup>
     <Compile Include="AssemblyInfo.fs" />
     <Compile Include="DragAndDrop.fs" />
-      <Compile Include="Bucket.fs" />
   </ItemGroup>
   <ItemGroup>
       <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0" PrivateAssets="All" />
