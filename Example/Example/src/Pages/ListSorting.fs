@@ -21,6 +21,24 @@ module Map =
     let replace item index m =
         m |> Map.remove index |> Map.add index item
 
+    let choose f m =
+        (Map.empty, m)
+        ||> Map.fold (fun s k v ->
+            let result = f k v
+            if Option.isSome result
+            then Map.add k result.Value s
+            else s
+        )
+
+    let chooseValues f m =
+        (Map.empty, m)
+        ||> Map.fold (fun s k v ->
+            let result = f v
+            if Option.isSome result
+            then Map.add k result.Value s
+            else s
+        )
+
 type CategoryIndex = int
 type Category = {
     Name : string
@@ -28,11 +46,20 @@ type Category = {
     ElementId : string
 }
 
+type CategoryType =
+| ListSection of Category
+| DeleteSection of Category
+    with
+        member this.IsList() =
+            match this with
+            | ListSection _ -> true
+            | DeleteSection _ -> false
 
 let initCategories() = 
     [
-        0, { Name = "Bucket One"; Items = [ "Item 1"; "Item 2"; "Item 3"; "Item 4"]; ElementId = "bucket-one" }
-        1, { Name = "Bucket Two"; Items = [ "Item 5"; "Item 6"]; ElementId = "bucket-two" }
+        0, ListSection { Name = "Bucket One"; Items = [ "Item 1"; "Item 2"; "Item 3"; "Item 4"]; ElementId = "bucket-one" }
+        1, ListSection { Name = "Bucket Two"; Items = [ "Item 5"; "Item 6"]; ElementId = "bucket-two" }
+        2, DeleteSection { Name = "Delete Bucket"; Items = []; ElementId = "delete-bucket" }
     ]
     |> Map.ofList
 
@@ -41,7 +68,7 @@ type Model = {
     /// If there is an item currently being dragged and/or dropped,
     /// state for that action is stored within this model.
     DragAndDrop : DragAndDrop.Model
-    Categories : Map<CategoryIndex, Category>
+    Categories : Map<CategoryIndex, CategoryType>
 } with
     static member Init() = {
         Categories = initCategories()
@@ -50,12 +77,33 @@ type Model = {
         DragAndDrop = None
     }
 
+    member this.ListCategories() =
+        this.Categories
+        |> Map.map (fun k v ->
+            match v with
+            | ListSection cat -> Some cat
+            | DeleteSection _ -> None
+        )
+        |> Map.chooseValues id
+
+    member this.DeleteCategories() =
+        this.Categories
+        |> Map.map (fun k v ->
+            match v with
+            | DeleteSection cat -> Some cat
+            | ListSection _ -> None
+        )
+        |> Map.chooseValues id
+
 
 type Msg =
 | Initialize
 /// Handle & dispatch Drag And Drop messages
 | DragAndDropMsg of categoryIndex : int * dndMsg : DragAndDrop.Msg
+/// Handle bucket changes. As the buckets are defined by the client code (this code), handling how items
+/// change between buckets is defined here.
 | BucketChange of startBucket : int * startIndex : int * newBucket : int
+//| Delete of startBucket : int * startIndex : int
 
 /// Helper function to dispatch Drag And Drop messages to this message handler.
 let dndDispatch categoryIndex (dispatch: Msg -> unit) = (fun (m : DragAndDrop.Msg) -> DragAndDropMsg (categoryIndex, m) |> dispatch)
@@ -138,23 +186,35 @@ let column model category dispatch categoryIndex =
         section [content]
     ]
 
-let deleteBucket dnd ci dispatch =
-    let listeners : IHTMLProp list = DragAndDrop.mouseListener (dndDispatch ci dispatch) dnd
-    div [ 
-        Style [ CSSProp.TextAlign TextAlignOptions.Center ] 
-        yield! listeners
-    ] [
-        h3 [] [ str "Drag here to delete" ]
-    ]
+let deleteBucket model category dispatch ci = 
+    let section = bucketSection ci model dispatch category.ElementId
+    let content =
+        let onBucketChange sb nb = 
+            match sb, nb with
+            | Some x, Some y -> BucketChange(x, -1, y) |> dispatch
+            | _ -> ()
+        let dnd = model.DragAndDrop
+        let dispatch = (dndDispatch ci dispatch)
+        let listeners = DragAndDrop.mouseListener dispatch dnd
+        let dropEventListeners = DragAndDrop.dropEvents dnd dispatch -1 "" (Some ci, onBucketChange)
+        div [
+            Style [ TextAlign TextAlignOptions.Center ]
+            yield! (listeners @ dropEventListeners)
+        ] [
+            h3 [] [ str "Drag here to delete"]
+        ]
+    
+    section [content]
 
 let view (model : Model) (dispatch : Msg -> unit) =
-    let count = model.Categories |> Map.count
+    let listCategories = model.ListCategories()
+    let deleteCategoryId, deleteCategory = model.DeleteCategories() |> Map.toList |> List.head
     div [ Style [ CSSProp.TextAlign TextAlignOptions.Center ] ] [
         h2 [] [ str "Drag And Drop to sort or move" ]
 
-        yield! model.Categories |> Map.toList |> List.map (fun (i, c) -> column model c dispatch i)
-        yield! model.Categories |> Map.toList |> List.map (fun (i, c) -> ghostView model.DragAndDrop i c.Items)
-        deleteBucket model.DragAndDrop (count + 1) dispatch
+        yield! listCategories |> Map.toList |> List.map (fun (i, c) -> column model c dispatch i)
+        yield! listCategories |> Map.toList |> List.map (fun (i, c) -> ghostView model.DragAndDrop i c.Items)
+        deleteBucket model deleteCategory dispatch deleteCategoryId
     ]
 
 
@@ -170,31 +230,49 @@ let update (msg : Msg) (model : Model) =
     match msg with
     | Initialize -> model, Cmd.none
     | DragAndDropMsg (categoryIndex, dragMsg) ->
-        // The Drag And Drop update will return an updated DND model and a newly sorted list of items.
-        let cat = model.Categories.[categoryIndex]
-        let dnd, sortedItems = DragAndDrop.update config dragMsg model.DragAndDrop cat.Items
-        let cat = { cat with Items = sortedItems }
-        let cats = model.Categories |> Map.replace cat categoryIndex
-        // The commands from Drag And Drop need to be fetched separately.
-        let cmd = getCommands dnd |> Cmd.map (fun x -> DragAndDropMsg (categoryIndex, x))
-        { model with Categories = cats; DragAndDrop = dnd }, cmd
+        let maybeCat = Map.tryFind categoryIndex model.Categories
+        match maybeCat with
+        | Some (ListSection cat) ->
+            // The Drag And Drop update will return an updated DND model and a newly sorted list of items.
+            let dnd, sortedItems = DragAndDrop.update config dragMsg model.DragAndDrop cat.Items
+            let cat = { cat with Items = sortedItems }
+            let cats = model.Categories |> Map.replace (ListSection cat) categoryIndex
+            // The commands from Drag And Drop need to be fetched separately.
+            let cmd = getCommands dnd |> Cmd.map (fun x -> DragAndDropMsg (categoryIndex, x))
+            { model with Categories = cats; DragAndDrop = dnd }, cmd
+        | _ ->
+            printfn "no map found for index %A, handling as delete" categoryIndex
+            // no category was found. this must be the delete bucket.
+            let dnd, _ = DragAndDrop.update config dragMsg model.DragAndDrop []
+            let cmd = getCommands dnd |> Cmd.map (fun x -> DragAndDropMsg (categoryIndex, x))
+            { model with DragAndDrop = dnd }, cmd
     | BucketChange (startCatIndex, startIndex, newCatIndex) ->
         printfn "bucket change, sb : %A si %A nb %A" startCatIndex startIndex newCatIndex
-        let cat = tryGetCategory model startCatIndex
+        let oldCategoryType = tryGetCategory model startCatIndex
+        let newCategoryType = tryGetCategory model newCatIndex
         let originalIndex = tryGetDraggedItemIndex model.DragAndDrop (Some startCatIndex)
-        match cat, originalIndex with
-        | Some cat, Some originalIndex ->
+        match oldCategoryType, newCategoryType, originalIndex with
+        | Some (ListSection cat), Some(ListSection newCat), Some originalIndex ->
             let itemToMove = List.tryItem originalIndex cat.Items
             printfn "original index is %A" originalIndex
             let item = itemToMove |> Option.defaultValue "error: item not found"
             printfn "Item being moved is %A" item
             let oldCat = { cat with Items = List.remove originalIndex cat.Items }
-            let newCat = model.Categories.[newCatIndex]
             let newCat = { newCat with Items = item :: newCat.Items }
-            let cats = 
+            let cats =
                 model.Categories
-                |> Map.replace oldCat startCatIndex
-                |> Map.replace newCat newCatIndex
+                |> Map.replace (ListSection oldCat) startCatIndex
+                |> Map.replace (ListSection newCat) newCatIndex
+            { model with Categories = cats }, Cmd.none
+        | Some (ListSection cat), Some(DeleteSection deleteCat), Some originalIndex ->
+            let itemToMove = List.tryItem originalIndex cat.Items
+            printfn "original index is %A" originalIndex
+            let item = itemToMove |> Option.defaultValue "error: item not found"
+            printfn "Item being deleted is %A" item
+            let oldCat = { cat with Items = List.remove originalIndex cat.Items }
+            let cats =
+                model.Categories
+                |> Map.replace (ListSection oldCat) startCatIndex
             { model with Categories = cats }, Cmd.none
         | _ ->
             model, Cmd.none

@@ -188,6 +188,7 @@ let dropEvents model dispatch dropIndex dropElementId (bucketIndex, onBucketChan
 /// Creates mouse listeners to listen for mouse events on a bucket.
 /// This contains the regular mouseListener events, but with an added function to handle a dropped item, as well as
 /// other specific bucket listeners.
+[<Obsolete>]
 let bucketListeners (model : Model) (dispatch : Msg -> unit) (dropElementId : string) (onDrop) : IHTMLProp list =
     match model with
     | Some m ->
@@ -290,12 +291,13 @@ let update config msg model (li: 'a list) : (Model * 'a list) =
                 m', newList
             elif m.DragCounter > 1 && m.DropBucket <> bucketIndex then
                 onBucketChange m.DropBucket bucketIndex
-                // this is where we have to update the list to contain the new hover item
-                // TODO : this is where we need to add a hover item to the list
                 let newList =
-                    li
-                    |> config.BeforeUpdate m.DragIndex dropIndex
-                    |> listUpdate m.DragIndex dropIndex
+                    if dropIndex > 0 then
+                        li
+                        |> config.BeforeUpdate m.DragIndex dropIndex
+                        |> listUpdate m.DragIndex dropIndex
+                    else
+                        li
                 
                 moveBuckets dropIndex bucketIndex m |> Some, newList
             else
@@ -304,19 +306,7 @@ let update config msg model (li: 'a list) : (Model * 'a list) =
     | DragLeave ->
         model |> Option.map(fun m -> { m with DropIndex = m.DragIndex }), li
     | DragEnd ->
-        match model with
-        | Some m -> //, OnDrag ->
-            // match m.DropInto with
-            // | DropInto.Bucket ->
-            //     printfn "drag end with bucket drop"
-            //     let newList =
-            //         li
-            //         |> config.BeforeUpdate m.DragIndex m.DropIndex
-            //         |> listRemove m.DragIndex
-            //     None, newList
-            // | _ -> None, li
-            None, li
-        | _ -> None, li
+        None, li
     | GotDragElement (Ok ele) ->
         model |> Option.map(fun m -> { m with DragElement = Some ele; DropElement = Some ele }), li
     | GotDragElement (Error e) ->
@@ -337,9 +327,8 @@ module ExternalHelpers =
     /// Returns None if no item is being dragged or the drag index exceeds the item list length.
     let tryGetDraggedItem (model : Model) bucketIndex (items: 'a list) =
         let len = items |> List.length
-        
         match model, bucketIndex with
-        | Some { DragIndex = dragIndex; StartBucket = (Some sb) }, Some bucketId when len > dragIndex && sb = bucketId ->
+        | Some { DragIndex = dragIndex; DropBucket = (Some sb) }, Some bucketId when len > dragIndex && sb = bucketId ->
             items |> List.skip dragIndex |> List.tryHead
         | Some { DragIndex = dragIndex; StartBucket = sb }, None when len > dragIndex && Option.isNone sb ->
             items |> List.skip dragIndex |> List.tryHead
