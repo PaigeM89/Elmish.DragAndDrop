@@ -173,7 +173,7 @@ let bucketSection categoryIndex model dispatch _id =
 
     section [
         Id _id
-        Style [ yield! hoverStyles ]
+        Style [ yield! hoverStyles; yield CSSProp.MarginLeft "25px"; yield CSSProp.MarginRight "25px" ]
     ]
 
 let column model category dispatch categoryIndex =
@@ -211,9 +211,10 @@ let view (model : Model) (dispatch : Msg -> unit) =
     let deleteCategoryId, deleteCategory = model.DeleteCategories() |> Map.toList |> List.head
     div [ Style [ CSSProp.TextAlign TextAlignOptions.Center ] ] [
         h2 [] [ str "Drag And Drop to sort or move" ]
-
-        yield! listCategories |> Map.toList |> List.map (fun (i, c) -> column model c dispatch i)
-        yield! listCategories |> Map.toList |> List.map (fun (i, c) -> ghostView model.DragAndDrop i c.Items)
+        div [ Style [ CSSProp.Display DisplayOptions.InlineFlex ]] [
+            yield! listCategories |> Map.toList |> List.map (fun (i, c) -> column model c dispatch i)
+            yield! listCategories |> Map.toList |> List.map (fun (i, c) -> ghostView model.DragAndDrop i c.Items)
+        ]
         deleteBucket model deleteCategory dispatch deleteCategoryId
     ]
 
