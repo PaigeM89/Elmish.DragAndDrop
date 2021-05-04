@@ -196,7 +196,7 @@ let deleteBucket model category dispatch ci =
         let dnd = model.DragAndDrop
         let dispatch = (dndDispatch ci dispatch)
         let listeners = DragAndDrop.mouseListener dispatch dnd
-        let dropEventListeners = DragAndDrop.dropEvents dnd dispatch -1 "" (Some ci, onBucketChange)
+        let dropEventListeners = DragAndDrop.dropEvents dnd dispatch 0 "" (Some ci, onBucketChange)
         div [
             Style [ TextAlign TextAlignOptions.Center ]
             yield! (listeners @ dropEventListeners)
