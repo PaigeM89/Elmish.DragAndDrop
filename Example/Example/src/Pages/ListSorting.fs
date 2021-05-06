@@ -1,4 +1,4 @@
-module App.Pages.ListSorting
+module ListSorting
 
 open Elmish
 open Elmish.React

@@ -279,8 +279,10 @@ let update config msg model (li: 'a list) : (Model * 'a list) =
         | None ->
             model |> Option.map(fun m -> { m with DropElementId = dropElementId }), li
     | DragEnter ((bucketIndex, onBucketChange), dropIndex) ->
+        printfn "In drag enter, bucket %A, drop index %A" bucketIndex dropIndex
         match model with
         | Some m ->
+            printfn "in drag enter, model is %A" model
             // only change list order if we're in the same bucket ( verify later ? doesn't allow insertion at an index)
             if m.DropBucket = bucketIndex && m.DragCounter > 1 && m.DragIndex <> dropIndex then
                 let m' = m |> modelUpdate dropIndex |> Some
@@ -302,7 +304,9 @@ let update config msg model (li: 'a list) : (Model * 'a list) =
                 moveBuckets dropIndex bucketIndex m |> Some, newList
             else
                 model, li
-        | _ -> model |> Option.map (fun x -> { x with DragCounter = 0 }), li
+        | _ ->
+            printfn "in drag enter, no model"
+            model |> Option.map (fun x -> { x with DragCounter = 0 }), li
     | DragLeave ->
         model |> Option.map(fun m -> { m with DropIndex = m.DragIndex }), li
     | DragEnd ->

@@ -14,6 +14,9 @@ nuget Fable.Browser.Dom
 nuget Fable.Elmish
 nuget Fable.Elmish.React
 nuget Fable.React
+nuget Fable.Promise
+nuget Fable.React.DrawingCanvas
+nuget Feliz
 
 // [ FAKE GROUP ]
 group Build
