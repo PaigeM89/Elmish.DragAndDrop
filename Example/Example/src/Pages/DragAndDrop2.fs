@@ -9,10 +9,12 @@ module CollectionDragAndDrop2 =
   open Elmish
   open Elmish.React
   
-  /// todo: 
-  ///   sorting
+  /// todo:
+  ///   better feel for moving items - feels clunky & unresponsive right now
   ///   animations
-  ///   category changing
+  ///   category blocking
+  ///   removal when dropping off target
+  ///   make input fields usable lol
 
   type ElementId = string
 
@@ -77,6 +79,7 @@ module CollectionDragAndDrop2 =
       ("draggable-3", p [ ] [ str "This is is also content" ])
       ("draggable-4", p [ ] [ str "And some more content" ])
       ("draggable-5", h3 [ ] [ str "And more content, but different" ])
+      ("draggable-6", p [] [ str "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."])
     ]] |> initItemLocations
     // OnDrag = None
     // OnDragEnter = None
@@ -122,10 +125,10 @@ module CollectionDragAndDrop2 =
 
   let IsListener loc dispatch : IHTMLProp list = [
     Style [
-      CSSProp.Cursor "none"
     ]
-    DOMAttr.OnMouseEnter(fun ev ->
+    DOMAttr.OnMouseOver(fun ev ->
       ev.preventDefault()
+      printfn "mouse enter for location %A" loc
       loc |> DragOver |> dispatch
     )
   ]
@@ -134,23 +137,25 @@ module CollectionDragAndDrop2 =
     Style [
       CSSProp.Custom ("draggable", true)
       DraggableType t
-      CSSProp.Cursor "grabbing"
       CSSProp.Position PositionOptions.Fixed
       CSSProp.Left x
       CSSProp.Top y
       Opacity 0.8f
+      PointerEvents "none"
     ]
-    OnMouseMove(fun ev ->
-      ev.preventDefault()
-      let offset = getOffset ev id
-      OnDrag (id, offset) |> dispatch
-    )
-    OnMouseUp (fun ev -> ev.preventDefault();  DragEnd |> dispatch)
+    // these are in the drop area instead
+    // OnMouseMove(fun ev ->
+    //   ev.preventDefault()
+    //   let offset = getOffset ev id
+    //   OnDrag (id, offset) |> dispatch
+    // )
+    //OnMouseUp (fun ev -> ev.preventDefault();  DragEnd |> dispatch)
   ]
 
   let IsPreview() : IHTMLProp list = [
     Style [
       Opacity 0.2f
+      PointerEvents "none"
     ]
   ]
 
@@ -159,7 +164,7 @@ module CollectionDragAndDrop2 =
     match model.Moving with
     | Some elementId when elementId = id ->
       let coords = model.Cursor -- model.Offset
-      div [] [
+      div [ ] [
         div [ yield! IsDragged id "test" coords dispatch; ClassName (_class + " dragged"); Id id ] [ content ]
         div [ yield! IsPreview(); ClassName (_class); Id (previewId id) ] [content]
       ]
@@ -181,12 +186,27 @@ module CollectionDragAndDrop2 =
           let preview = div [ yield! IsPreview(); ClassName _class ] [ content ]
           div [] [ hover; preview ]
         else
-          div [ yield! IsListener loc dispatch; ClassName _class; Id id ] [ content ]
+          //  maybe put "zones" behind this to detect mouse move?
+          div [ 
+            yield! IsListener loc dispatch; ClassName _class; Id id
+          ] [ 
+            content 
+          ]
       )
     | None ->
+      //let omo = (fun ev -> printfn "Mouse over tiny div")
       /// nothing is being dragged
       items |> List.map (fun (loc, content) ->
-        div [ yield! IsDraggable loc "test" dispatch; ClassName _class; Id (locId loc)] [ content ]
+        div [ 
+          yield! IsDraggable loc "test" dispatch; ClassName _class; Id (locId loc)
+          // OnMouseOver(fun ev ->
+          //   printfn "On MouseOver for item %A at coords %A" loc (fromME ev)
+          // )
+        ] [
+          //div [ Style [Height "1px"; ]; OnMouseOver omo ][  ]
+          content 
+          //div [ Style [Height "50%"; Border "1px solid pink"]; OnMouseOver omo ][  ]
+        ]
       )
     
 
@@ -207,7 +227,7 @@ module CollectionDragAndDrop2 =
       }
       static member Default(regular, hover, preview, area) = {
         Regular = regular
-        Hover = hover @ [ Opacity 0.8; Position PositionOptions.Fixed; ZIndex 9999; Margin 0 ]
+        Hover = hover @ [ Opacity 0.8; Position PositionOptions.Fixed; Margin 0 ]
         Preview = preview @ [ Opacity 0.2 ]
         Area = area
       }
@@ -251,26 +271,29 @@ module CollectionDragAndDrop2 =
         ] content
 
     [<ReactComponent>]
-    let DropArea (id, _type, _class, isDragging, dispatch, contents) = 
+    let DropArea (id, _type, _class, draggedElementId : ElementId option, dispatch, contents) = 
       div [ 
         Id id
         ClassName ("drop-area " + _class)
         Style [
           Custom ("dropareaType", _type)
           Height "200px"
+          if draggedElementId.IsSome then CSSProp.Cursor "grabbing"
         ]
-        if isDragging then
+        match draggedElementId with
+        | Some eleId ->
           OnMouseMove(fun ev ->
             ev.preventDefault()
             let c = coords ev.clientX ev.clientY
-            OnDrag (id, c) |> dispatch
+            OnDrag (eleId, c) |> dispatch
           )
           OnMouseUp (fun ev -> ev.preventDefault();  DragEnd |> dispatch)
+        | None -> ()
       ] contents
 
   let dropArea model dispatch = 
     let left = 
-      Components.DropArea("left-container", "test", "container left", model.Moving.IsSome, dispatch, 
+      Components.DropArea("left-container", "test", "container left", model.Moving, dispatch, 
         sortedDraggables model dispatch "content" model.Items.[0]
       )
 
@@ -278,7 +301,7 @@ module CollectionDragAndDrop2 =
       let items = 
         model.Items.[1]
         |> sortedDraggables model dispatch "content"
-      Components.DropArea("right-container", "test", "container right", model.Moving.IsSome, dispatch, items)
+      Components.DropArea("right-container", "test", "container right", model.Moving, dispatch, items)
 
     div [ ] [
         left
@@ -286,9 +309,7 @@ module CollectionDragAndDrop2 =
     ]
 
   let view model dispatch =
-    div [
-      //Style [ CSSProp.AlignContent AlignContentOptions.Center; Display DisplayOptions.Flex ]
-    ] [
+    div [] [
         h2 [] [ str "Drag and drop 2 dropping boogaloo"]
         div [ ClassName "wrapper" ] [
             dropArea model dispatch
@@ -297,7 +318,7 @@ module CollectionDragAndDrop2 =
 
   let private split i li =
     let len x = List.length x
-    let first = if len li > i then List.take i li else li
+    let first = if len li >= i then List.take i li else li
     let second = if len li <= i then [] else List.skip i li
     first, second
 
@@ -318,13 +339,9 @@ module CollectionDragAndDrop2 =
 
 
   let private removeElement id model =
-    printfn "Removing %s from lists" id
-    // let mutable removedElement = None
-    //purge all previews
     let previewId = previewId id
-    let isTarget (eleId, content) =
+    let isTarget (eleId, _) =
       if (locId eleId) = id then
-        // removedElement <- Some (eleId, content)
         true
       elif (locId eleId) = previewId then
         true
@@ -333,11 +350,7 @@ module CollectionDragAndDrop2 =
 
     let filterList li =
       li
-      |> List.filter (fun x -> 
-        let r = not(isTarget x)
-        printfn "Checking item %A for deleting id %s, got %A" (fst x) id r
-        r
-      )
+      |> List.filter (fun x -> not(isTarget x))
 
     let updatedLists =
       model.Items
@@ -345,10 +358,18 @@ module CollectionDragAndDrop2 =
     updatedLists //, removedElement
 
   let private insertAt (listIndex, index, id) item (lists: (ItemLocation * ReactElement) list list) =
+    //printfn "Inserting %s to list %i at index %i" id listIndex index
     let li = lists.[listIndex]
-    let h, t = split index li
-    let v = (listIndex, index, id), item
-    h @ (v :: t)
+    if List.length li < index then
+      let h, t = split index li
+      let toIds li = li |> List.map (fun ((_, _, x), _) -> x)
+      //printfn "splitting list %A at index %i produced %A, %A before inserting at index %i" (toIds li) index (toIds h) (toIds t) index
+      let v = (listIndex, index, id), item
+      h @ (v :: t)
+    else
+      let i = List.length li + 1
+      let v = (listIndex, i, id), item
+      li @ [v]
 
   let private replaceListAtIndex listIndex li items =
     items
@@ -358,7 +379,6 @@ module CollectionDragAndDrop2 =
     // the old element should be automatically shifted as part of list shuffling
     let removedElementOpt = getItemContent newElementId model
     let allItems = removeElement newElementId model
-    printfn "All Items are %A" allItems
     match removedElementOpt with
     | Some ele ->
       let newList = insertAt (listIndex, index, newElementId) (ele) allItems
