@@ -10,7 +10,6 @@ module CollectionDragAndDrop2 =
   open Elmish.React
   
   /// todo: 
-  ///   dragged item is way off cursor
   ///   sorting
   ///   animations
   ///   category changing
@@ -18,7 +17,17 @@ module CollectionDragAndDrop2 =
   type ElementId = string
 
   type Coords = { x : float; y : float}
-
+      with
+      static member (+) (a, b) = { x = a.x + b.x; y = a.y + b.y }
+      static member (++) (a, b: Coords option) =
+        match b with
+        | Some b -> a + b
+        | None -> a
+      static member (-) (a, b) = { x = a.x - b.x; y = a.y - b.y }
+      static member (--) (a, b : Coords option) =
+        match b with
+        | Some b -> a - b
+        | None -> a
   let coords x y = { x = x; y = y }
   let fromME (ev : MouseEvent) = { x = ev.clientX; y = ev.clientY }
 
@@ -26,6 +35,7 @@ module CollectionDragAndDrop2 =
 
   type Model = {
     Cursor : Coords
+    Offset: Coords option
     Moving : ElementId option
     OnDrag : (ElementId -> unit) option
     OnDragEnter: (ElementId -> unit) option
@@ -33,18 +43,32 @@ module CollectionDragAndDrop2 =
 
   let init() = {
     Cursor = { x = 0. ; y = 0.}
+    Offset = None
     Moving = None
     OnDrag = None
     OnDragEnter = None
   }
 
   type Msg =
-  | DragStart of elementId : ElementId * index : int * start : Coords
+  | DragStart of elementId : ElementId * index : int * start : Coords * offset : Coords
   | OnDrag of elementId : ElementId * coords : Coords
   | DragEnter of target : ElementId
   | DragLeave
   | DragOver of elementId : ElementId * index : int
   | DragEnd
+
+  let getDraggedElement id =
+    let doc = Browser.Dom.document
+    let ele = doc.getElementById(id)
+    ele
+
+  let getOffset ev id =
+    let ele = getDraggedElement id
+    let rect = ele.getBoundingClientRect()
+    let coords = fromME ev
+    let x = coords.x - rect.left
+    let y = coords.y - rect.top
+    { x = x; y = y}
 
 
   let DraggableType (t : string) = CSSProp.Custom ("draggableType", t)
@@ -58,7 +82,8 @@ module CollectionDragAndDrop2 =
     ]
     DOMAttr.OnMouseDown(fun ev ->
       ev.preventDefault()
-      (id, 0, fromME ev) |> DragStart |> dispatch
+      let o = getOffset ev id
+      (id, index, fromME ev, o) |> DragStart |> dispatch
     )
   ]
 
@@ -84,9 +109,8 @@ module CollectionDragAndDrop2 =
     ]
     OnMouseMove(fun ev ->
       ev.preventDefault()
-      //let c = coords ev.pageY ev.pageY
-      let c = coords ev.clientX ev.clientY
-      OnDrag (id, c) |> dispatch
+      let offset = getOffset ev id
+      OnDrag (id, offset) |> dispatch
     )
     OnMouseUp (fun ev -> ev.preventDefault();  DragEnd |> dispatch)
   ]
@@ -100,8 +124,9 @@ module CollectionDragAndDrop2 =
   let draggable model dispatch id index _class content =
     match model.Moving with
     | Some elementId when elementId = id ->
+      let coords = model.Cursor -- model.Offset
       div [] [
-        div [ yield! IsDragged id index "test" model.Cursor dispatch; ClassName (_class + " dragged"); Id id ] [ content ]
+        div [ yield! IsDragged id index "test" coords dispatch; ClassName (_class + " dragged"); Id id ] [ content ]
         div [ yield! IsPreview(); ClassName (_class) ] [content]
       ]
     | Some _ ->
@@ -116,7 +141,8 @@ module CollectionDragAndDrop2 =
       /// an element is being dragged
       items |> List.mapi (fun i (id, content) -> 
         if id = dei then
-          let hover = div [ yield! IsDragged id i "test" model.Cursor dispatch; ClassName (_class + " dragged"); Id id ] [content]
+          let coords= model.Cursor -- model.Offset
+          let hover = div [ yield! IsDragged id i "test" coords dispatch; ClassName (_class + " dragged"); Id id ] [content]
           let preview = div [ yield! IsPreview(); ClassName _class ] [ content ]
           div [] [ hover; preview ]
         else
@@ -167,7 +193,7 @@ module CollectionDragAndDrop2 =
         div [ Style styles.Regular;  ] content
       | None ->
         // nothing is being dragged
-        let f = (fun ev -> (id, index, (fromME ev)) |> DragStart |> dispatch)
+        let f = (fun ev -> (id, index, (fromME ev), getOffset ev id) |> DragStart |> dispatch)
         div [ Style styles.Regular; OnMouseDown f ] content
 
     /// i dont really like how any of this turned out
@@ -210,11 +236,11 @@ module CollectionDragAndDrop2 =
     let left = 
       Components.DropArea("left-container", "test", "container left", model.Moving.IsSome, dispatch, 
         [
-            draggable model dispatch "draggable-1" 0 "content" (p [] [ str "This is some content" ])
+            draggable model dispatch "draggable-0" 0 "content" (p [] [ str "This is some content" ])
             div [] [
                 p [] [ str "And some content with an input box" ]
                 input [ ]
-            ] |> draggable model dispatch "draggable-2" 1 "content"
+            ] |> draggable model dispatch "draggable-1" 1 "content"
             p [ ] [ str "And yet even more" ]  |> draggable model dispatch "draggable-2" 2 "content"
         ]
       )
@@ -251,8 +277,8 @@ module CollectionDragAndDrop2 =
 
   let update msg model  = //(li : ReactElement list) =
     match msg with
-    | DragStart (element, index, startCoords) ->
-      { model with Moving = Some element }, Cmd.none
+    | DragStart (element, index, startCoords, offset) ->
+      { model with Moving = Some element; Cursor = startCoords; Offset = Some offset }, Cmd.none
     | OnDrag (element, coords) ->
       match model.OnDrag with
       | Some f -> f element
@@ -263,11 +289,9 @@ module CollectionDragAndDrop2 =
       | Some f -> f element
       | None -> ()
       model, Cmd.none
-    | DragOver (id, index) ->
-      printfn "Dragging over %s with index %i" id index
-
+    | DragOver (id, index) -> // todo : this
+      printfn "drag over id %s at index %i" id index
       model, Cmd.none
     | DragEnd ->
-      printfn "Drag end for element"
       { model with Moving = None }, Cmd.none
     | _ -> model, Cmd.none
