@@ -38,6 +38,9 @@ module DragAndDrop2 =
   | DragOver
   | DragEnd
 
+  /// this needs heavy refactoring once i can figure out a design approach
+  /// this is also serving as a storage for how "general" dragging works (no dropping yet)
+  /// while the example page is worked on 
 
   let DraggableType (t : string) = CSSProp.Custom ("draggableType", t)
   let IsDropArea (t : string) = CSSProp.Custom ("drop-bucket", t)

@@ -9,12 +9,18 @@ module CollectionDragAndDrop2 =
   open Elmish
   open Elmish.React
   
+  /// todo: 
+  ///   dragged item is way off cursor
+  ///   sorting
+  ///   animations
+  ///   category changing
 
   type ElementId = string
 
   type Coords = { x : float; y : float}
 
   let coords x y = { x = x; y = y }
+  let fromME (ev : MouseEvent) = { x = ev.clientX; y = ev.clientY }
 
   type Rect = { x : float; y : float; wedight : float; height: float }
 
@@ -33,18 +39,18 @@ module CollectionDragAndDrop2 =
   }
 
   type Msg =
-  | DragStart of elementId : ElementId
+  | DragStart of elementId : ElementId * index : int * start : Coords
   | OnDrag of elementId : ElementId * coords : Coords
   | DragEnter of target : ElementId
   | DragLeave
-  | DragOver
+  | DragOver of elementId : ElementId * index : int
   | DragEnd
 
 
   let DraggableType (t : string) = CSSProp.Custom ("draggableType", t)
   let IsDropArea (t : string) = CSSProp.Custom ("drop-bucket", t)
 
-  let IsDraggable id (t : string) dispatch : IHTMLProp list= [
+  let IsDraggable id index (t : string) dispatch : IHTMLProp list= [
     Style [
       CSSProp.Custom ("draggable", true)
       DraggableType t
@@ -52,11 +58,21 @@ module CollectionDragAndDrop2 =
     ]
     DOMAttr.OnMouseDown(fun ev ->
       ev.preventDefault()
-      id |> DragStart |> dispatch
+      (id, 0, fromME ev) |> DragStart |> dispatch
     )
   ]
 
-  let IsDragged id t {Coords.x = x; y = y} dispatch : IHTMLProp list = [
+  let IsListener id index dispatch : IHTMLProp list = [
+    Style [
+      CSSProp.Cursor "none"
+    ]
+    DOMAttr.OnMouseOver(fun ev ->
+      ev.preventDefault()
+      (id, index) |> DragOver |> dispatch
+    )
+  ]
+
+  let IsDragged id index t {Coords.x = x; y = y} dispatch : IHTMLProp list = [
     Style [
       CSSProp.Custom ("draggable", true)
       DraggableType t
@@ -75,18 +91,102 @@ module CollectionDragAndDrop2 =
     OnMouseUp (fun ev -> ev.preventDefault();  DragEnd |> dispatch)
   ]
 
-  let draggable model dispatch id _class content =
+  let IsPreview() : IHTMLProp list = [
+    Style [
+      Opacity 0.2f
+    ]
+  ]
+
+  let draggable model dispatch id index _class content =
     match model.Moving with
     | Some elementId when elementId = id ->
-      div [ yield! IsDragged id "test" model.Cursor dispatch; ClassName (_class + " dragged"); Id id ] [ content ]
+      div [] [
+        div [ yield! IsDragged id index "test" model.Cursor dispatch; ClassName (_class + " dragged"); Id id ] [ content ]
+        div [ yield! IsPreview(); ClassName (_class) ] [content]
+      ]
     | Some _ ->
       // if we have an active drag, dont render anything as draggable
       div [ ClassName _class; Id id ] [ content ]
     | None ->
-      div [ yield! IsDraggable id "test" dispatch; ClassName _class; Id id ] [ content ]
+      div [ yield! IsDraggable id index "test" dispatch; ClassName _class; Id id ] [ content ]
+
+  let sortedDraggables model dispatch _class (items : (string * ReactElement) list) =
+    match model.Moving with
+    | Some dei ->
+      /// an element is being dragged
+      items |> List.mapi (fun i (id, content) -> 
+        if id = dei then
+          let hover = div [ yield! IsDragged id i "test" model.Cursor dispatch; ClassName (_class + " dragged"); Id id ] [content]
+          let preview = div [ yield! IsPreview(); ClassName _class ] [ content ]
+          div [] [ hover; preview ]
+        else
+          div [ yield! IsListener id i dispatch; ClassName _class; Id id ] [ content ]
+      )
+    | None ->
+      /// nothing is being dragged
+      items |> List.mapi (fun i (id, content) ->
+        div [ yield! IsDraggable id i "test" dispatch; ClassName _class; Id id] [ content ]
+      )
+    
 
   module Components =
     open Feliz
+
+    type Styles = {
+      Regular : CSSProp list
+      Hover : CSSProp list
+      Preview : CSSProp list
+      Area : CSSProp list
+    } with
+      static member Empty() = {
+        Regular = []
+        Hover = []
+        Preview = []
+        Area = []
+      }
+      static member Default(regular, hover, preview, area) = {
+        Regular = regular
+        Hover = hover @ [ Opacity 0.8; Position PositionOptions.Fixed; ZIndex 9999; Margin 0 ]
+        Preview = preview @ [ Opacity 0.2 ]
+        Area = area
+      }
+
+    let SortedDraggable id index draggedElementId (styles : Styles) (dispatch : Msg -> unit) content =
+      match draggedElementId with
+      | Some dei when dei = id ->
+        // draw the regular element, with the preview styles
+        let preview = div [ Style styles.Preview ] content
+        let hover = div [ Style styles.Hover ] content
+        div [] [
+          preview
+          hover
+        ]
+      | Some _ ->
+        //something is being dragged, but it's not this.
+        let listener = OnMouseOver
+        div [ Style styles.Regular;  ] content
+      | None ->
+        // nothing is being dragged
+        let f = (fun ev -> (id, index, (fromME ev)) |> DragStart |> dispatch)
+        div [ Style styles.Regular; OnMouseDown f ] content
+
+    /// i dont really like how any of this turned out
+
+    let SortedDropArea id draggedElementId (styles : Styles) (dispatch : Msg -> unit) content =
+      match draggedElementId with
+      | Some dei ->
+        div [
+          Id id
+          OnMouseUp (fun _ -> DragEnd |> dispatch)
+          OnMouseMove (fun ev -> OnDrag (dei, fromME ev) |> dispatch )
+          // todo: supply this some other way
+          ClassName "drop-area"
+        ] content
+      | None ->
+        div [
+          Id id
+          Style styles.Area
+        ] content
 
     [<ReactComponent>]
     let DropArea (id, _type, _class, isDragging, dispatch, contents) = 
@@ -110,21 +210,29 @@ module CollectionDragAndDrop2 =
     let left = 
       Components.DropArea("left-container", "test", "container left", model.Moving.IsSome, dispatch, 
         [
-            draggable model dispatch "draggable-1" "content" (p [] [ str "This is some content" ])
+            draggable model dispatch "draggable-1" 0 "content" (p [] [ str "This is some content" ])
             div [] [
                 p [] [ str "And some content with an input box" ]
                 input [ ]
-            ] |> draggable model dispatch "draggable-2" "content"
-            p [ ClassName "content" ] [ str "And yet even more" ] 
+            ] |> draggable model dispatch "draggable-2" 1 "content"
+            p [ ] [ str "And yet even more" ]  |> draggable model dispatch "draggable-2" 2 "content"
         ]
       )
 
     let right =
-        div [Id "right-container"; ClassName "container right" ] [
-            p [ ClassName "content dad-unselectable" ] [ str "This is is also content" ]
-            p [ ClassName "content dad-unselectable" ] [ str "And some more content" ]
-            h3 [ ClassName "content dad-unselectable" ] [ str "And more content, but different" ]
+      let items = 
+        [
+          ("draggable-3", p [ ] [ str "This is is also content" ])
+          ("draggable-4", p [ ] [ str "And some more content" ])
+          ("draggable-5", h3 [ ] [ str "And more content, but different" ])
         ]
+        |> sortedDraggables model dispatch "content"
+      Components.DropArea("right-container", "test", "container right", model.Moving.IsSome, dispatch, items)
+        // div [Id "right-container"; ClassName "container right" ] [
+        //     p [ ClassName "content dad-unselectable" ] [ str "This is is also content" ]
+        //     p [ ClassName "content dad-unselectable" ] [ str "And some more content" ]
+        //     h3 [ ClassName "content dad-unselectable" ] [ str "And more content, but different" ]
+        // ]
 
     div [ ] [
         left
@@ -141,9 +249,9 @@ module CollectionDragAndDrop2 =
         ]
     ]
 
-  let update msg model =
+  let update msg model  = //(li : ReactElement list) =
     match msg with
-    | DragStart element ->
+    | DragStart (element, index, startCoords) ->
       { model with Moving = Some element }, Cmd.none
     | OnDrag (element, coords) ->
       match model.OnDrag with
@@ -154,6 +262,10 @@ module CollectionDragAndDrop2 =
       match model.OnDragEnter with
       | Some f -> f element
       | None -> ()
+      model, Cmd.none
+    | DragOver (id, index) ->
+      printfn "Dragging over %s with index %i" id index
+
       model, Cmd.none
     | DragEnd ->
       printfn "Drag end for element"
