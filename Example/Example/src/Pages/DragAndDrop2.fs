@@ -357,19 +357,17 @@ module CollectionDragAndDrop2 =
       |> List.map(fun li -> filterList li)
     updatedLists //, removedElement
 
-  let private insertAt (listIndex, index, id) item (lists: (ItemLocation * ReactElement) list list) =
+  let private insertAt (listIndex, index, id) item (li: (ItemLocation * ReactElement) list) =
     //printfn "Inserting %s to list %i at index %i" id listIndex index
-    let li = lists.[listIndex]
-    if List.length li < index then
-      let h, t = split index li
-      let toIds li = li |> List.map (fun ((_, _, x), _) -> x)
-      //printfn "splitting list %A at index %i produced %A, %A before inserting at index %i" (toIds li) index (toIds h) (toIds t) index
-      let v = (listIndex, index, id), item
-      h @ (v :: t)
-    else
-      let i = List.length li + 1
-      let v = (listIndex, i, id), item
-      li @ [v]
+    let toIds li = li |> List.map (fun ((_, _, x), _) -> x)
+    printfn "list is %A" (toIds li)
+    let li = 
+      if index = 0 then
+        ((listIndex, 0, id), item) :: li
+      else
+        let h, t = split index li
+        h @ (((listIndex, index, id), item) :: t)
+    li |> List.mapi (fun i ((a, _, b), v ) -> ((a, i, b), v))
 
   let private replaceListAtIndex listIndex li items =
     items
@@ -381,7 +379,7 @@ module CollectionDragAndDrop2 =
     let allItems = removeElement newElementId model
     match removedElementOpt with
     | Some ele ->
-      let newList = insertAt (listIndex, index, newElementId) (ele) allItems
+      let newList = insertAt (listIndex, index, newElementId) (ele) allItems.[listIndex]
       let newItems = replaceListAtIndex listIndex newList allItems
       { model with Items = newItems }
     | None ->
