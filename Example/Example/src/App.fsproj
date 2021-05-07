@@ -8,6 +8,7 @@
     <!-- <Compile Include="Pages\Simple.fs" />   -->
     <Compile Include="Pages\ListSorting.fs" />
     <Compile Include="Pages/RateLimiting.fs" />
+    <Compile Include="Pages/Sliding.fs" />
     <Compile Include="Pages/DragAndDrop2.fs" />
     <Compile Include="App.fs" />
   </ItemGroup>

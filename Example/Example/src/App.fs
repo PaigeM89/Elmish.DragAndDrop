@@ -10,6 +10,7 @@ type Page =
 | ListSorting of model : ListSorting.Model
 | RateLimiting of model :  RateLimiting.Model
 | DragAndDrop2 of model : Pages.CollectionDragAndDrop2.Model
+| Sliding of model : Pages.Sliding.React.Model
 //| Bucket of model : App.Pages.Bucket.Model
 
 type Model = {
@@ -31,17 +32,29 @@ type Msg =
 | ListSortingMsg of ListSorting.Msg
 | DisplayListSorting
 | RateLimitingMsg of RateLimiting.Msg
+| ToDragAndDrop
 | DragAndDrop2Msg of Pages.CollectionDragAndDrop2.Msg
+| ToSliding
+| SlidingMsg of Pages.Sliding.React.Msg
 // | BucketMsg of App.Pages.Bucket.Msg
 // | DisplayBucket
 
+[<Feliz.ReactComponent>]
+let Root(m : Model) =
+    Pages.Sliding.React.view m (fun _ ->())
+
 let view model (dispatch : Msg -> unit) =
     div [] [
-        yield h2 [Style [ CSSProp.TextAlign TextAlignOptions.Center ] ] [ str "Drag And Drop Examples" ]
+        yield h2 [Style [ CSSProp.TextAlign TextAlignOptions.Center ] ] [ str "Various Examples" ]
+        yield div [ Style [ Display DisplayOptions.Table; Margin "auto" ]] [
+            yield button [ OnClick (fun _ ->  ToDragAndDrop |> dispatch)] [ str "Drag And Drop" ]
+            yield button [ OnClick (fun _ ->  ToSliding |> dispatch)] [ str "Sliding" ]
+        ]
         match model.Page with
         | ListSorting ls -> yield ListSorting.view ls (fun x -> x |> ListSortingMsg |> dispatch)
         | RateLimiting rl ->yield RateLimiting.view rl (fun x -> x |> RateLimitingMsg |> dispatch)
         | DragAndDrop2 dnd -> yield Pages.CollectionDragAndDrop2.view dnd (fun x -> x |> DragAndDrop2Msg |> dispatch )
+        | Sliding m -> yield Pages.Sliding.React.view m (fun x -> SlidingMsg x |> dispatch)
         //| Bucket b -> yield Pages.Bucket.view b (fun x -> x |> BucketMsg |> dispatch)
     ]
 
@@ -59,11 +72,21 @@ let update msg model =
     | DragAndDrop2Msg msg, DragAndDrop2 mdl ->
         let mdl, cmd = Pages.CollectionDragAndDrop2.update msg mdl
         { Page = DragAndDrop2 mdl }, Cmd.map DragAndDrop2Msg cmd
+    | SlidingMsg msg , Sliding mdl ->
+        printfn "root msg is %A" msg
+        let mdl, cmd = Pages.Sliding.React.update msg mdl
+        { Page = Sliding mdl }, Cmd.map SlidingMsg cmd
     // | BucketMsg msg, Bucket mdl ->
     //     let mdl, cmd = Pages.Bucket.update msg mdl
     //     { Page = Bucket mdl }, Cmd.map BucketMsg cmd
     // | DisplayBucket, _ ->
     //     { Page = Bucket (Pages.Bucket.Model.Init()) }, Cmd.none
+    | ToDragAndDrop, _ ->
+        let mdl = Pages.CollectionDragAndDrop2.init()
+        { Page = DragAndDrop2 mdl}, Cmd.none
+    | ToSliding, _ ->
+        let mdl = Pages.Sliding.React.Model.Init()
+        { Page = Sliding mdl }, Cmd.ofMsg (SlidingMsg (Pages.Sliding.React.Loading))
     | _, _ -> model, Cmd.none
 
 Program.mkProgram
