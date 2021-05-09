@@ -10,6 +10,7 @@
     <Compile Include="Pages/RateLimiting.fs" />
     <Compile Include="Pages/Sliding.fs" />
     <Compile Include="Pages/DragAndDrop2.fs" />
+    <Compile Include="Pages/DragAndDrop3.fs" />
     <Compile Include="App.fs" />
   </ItemGroup>
   <ItemGroup>

@@ -8,53 +8,58 @@ module DragAndDrop2 =
   open Fable.React
   open Fable.React.Props
 
-  type ElementId = string
+  module HelperTypes =
+    type ElementId = string
 
+    type Coords = { x : float; y : float}
+        with
+        static member (+) (a, b) = { x = a.x + b.x; y = a.y + b.y }
+        static member (++) (a, b: Coords option) =
+          match b with
+          | Some b -> a + b
+          | None -> a
+        static member (-) (a, b) = { x = a.x - b.x; y = a.y - b.y }
+        static member (--) (a, b : Coords option) =
+          match b with
+          | Some b -> a - b
+          | None -> a
+        member this.Scale x = { x = this.x * x; y = this.y * x}
+    let coords x y = { x = x; y = y }
+    let fromME (ev : Browser.Types.MouseEvent) = { x = ev.clientX; y = ev.clientY }
 
-  type Coords = { x : float; y : float}
-      with
-      static member (+) (a, b) = { x = a.x + b.x; y = a.y + b.y }
-      static member (++) (a, b: Coords option) =
-        match b with
-        | Some b -> a + b
-        | None -> a
-      static member (-) (a, b) = { x = a.x - b.x; y = a.y - b.y }
-      static member (--) (a, b : Coords option) =
-        match b with
-        | Some b -> a - b
-        | None -> a
-      member this.Scale x = { x = this.x * x; y = this.y * x}
-  let private coords x y = { x = x; y = y }
-  let private fromME (ev : Browser.Types.MouseEvent) = { x = ev.clientX; y = ev.clientY }
+    type ListIndex = int
+    type Index = int
+    type ItemLocation = ListIndex * Index * ElementId
+    let locListIndex = fun (x, _, _) -> x
+    let locIndex = fun (_, x, _) -> x
+    let locId = fun (_, _, id) -> id
 
-  type ListIndex = int
-  type Index = int
-  type ItemLocation = ListIndex * Index * ElementId
-  let private locListIndex = fun (x, _, _) -> x
-  let private locIndex = fun (_, x, _) -> x
-  let private locId = fun (_, _, id) -> id
+    type Slide  = {
+      /// The starting coordinates of the element that is sliding
+      StartCoords : Coords
+      /// The ID of the element that is sliding
+      ElementId : ElementId
+    } with
+      static member Create s ele = {
+        StartCoords = s
+        ElementId = ele
+      }
 
-  type Slide  = {
-    /// The starting coordinates of the element that is sliding
-    StartCoords : Coords
-    /// The ID of the element that is sliding
-    ElementId : ElementId
-  } with
-    static member Create s ele = {
-      StartCoords = s
-      ElementId = ele
-    }
+  open HelperTypes
 
   type Model = {
+    /// The cursor's current coordinates, updated when dragging to draw the ghost.
     Cursor : Coords
     /// The index of the currently moving item (or, rather, the point it is hovering over), and that element's id
     /// The slide contains the starting coordinates & element that is sliding.
     Moving : (Index * ElementId) option * Slide option
     /// The amount to adjust the drag ghost so that it is correctly placed under the cursor.
     Offset : Coords option
+    /// The items to be sorted. If there are multiple containers, use multiple lists.
     Items : (ItemLocation * ReactElement) list list
   }
 
+  /// Create a new Model instance
   let init() = {
     Cursor = { x = 0. ; y = 0.}
     Moving = None, None
@@ -63,8 +68,10 @@ module DragAndDrop2 =
   }
 
   type Msg =
-  | DragStart of loc : ItemLocation * start : Coords * offset : Coords //elementId : ElementId
-  | OnDrag of elementId : ElementId * coords : Coords
+  /// Indicates dragging has started on an element. Requires the item location and starting coordinates.
+  | DragStart of loc : ItemLocation * start : Coords * offset : Coords
+  /// An item is currently being dragged. This updates the location of the cursor.
+  | OnDrag of coords : Coords
   | DragOver of loc : ItemLocation
   | DragEnd
 
@@ -276,7 +283,7 @@ module DragAndDrop2 =
         div [
           Id id
           OnMouseUp (fun _ -> DragEnd |> dispatch)
-          OnMouseMove (fun ev -> OnDrag (dei, fromME ev) |> dispatch )
+          OnMouseMove (fun ev -> fromME ev |> OnDrag |> dispatch )
           // todo: supply this some other way
           ClassName "drop-area"
         ] content
@@ -297,11 +304,11 @@ module DragAndDrop2 =
           if dragged.IsSome then CSSProp.Cursor "grabbing"
         ]
         match dragged with
-        | Some (sourceIndex, eleId) ->
+        | Some _ ->
           OnMouseMove(fun ev ->
             ev.preventDefault()
             let c = coords ev.clientX ev.clientY
-            OnDrag (eleId, c) |> dispatch
+            OnDrag c |> dispatch
           )
           OnMouseUp (fun ev -> ev.preventDefault();  DragEnd |> dispatch)
         | None -> ()
@@ -390,8 +397,7 @@ module DragAndDrop2 =
     match msg with
     | DragStart (loc, startCoords, offset) ->
       { model with Moving = Some (locIndex loc, locId loc), None ; Cursor = startCoords; Offset = Some offset }, Cmd.none
-    | OnDrag (_, coords) ->
-      { model with Cursor = coords }, Cmd.none
+    | OnDrag coords ->      { model with Cursor = coords }, Cmd.none
     | DragOver (loc) ->
       match model.Moving with
       | Some id, _ ->

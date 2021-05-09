@@ -10,11 +10,9 @@ module CollectionDragAndDrop2 =
   open Elmish.React
   
   /// todo:
-  ///   animations
   ///   category blocking
   ///   removal when dropping off target
   ///   make input fields usable lol
-
 
   type ElementId = string
 
@@ -207,6 +205,7 @@ module CollectionDragAndDrop2 =
           CSSProp.TransitionProperty "top"
         ]
       ]
+
 
   let draggable model dispatch loc _class content =
     let id = locId loc

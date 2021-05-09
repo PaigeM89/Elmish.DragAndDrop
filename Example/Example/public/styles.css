@@ -36,10 +36,11 @@ p {
 
 /* drag and drop styles (stolen from dragula) */
 
-.dad-hover {
+/* .dad-hover {
   position: fixed !important;
   margin: 0 !important;
   /* z-index: 9001 !important; */
+  /*
   opacity: 0.8;
   filter: alpha(opacity=80);
 }
@@ -56,4 +57,4 @@ p {
 .dad-preview {
   opacity: 0.2;
   filter: alpha(opacity=20);
-}
+} */

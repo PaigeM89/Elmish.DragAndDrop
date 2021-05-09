@@ -10,6 +10,7 @@ type Page =
 | ListSorting of model : ListSorting.Model
 | RateLimiting of model :  RateLimiting.Model
 | DragAndDrop2 of model : Pages.CollectionDragAndDrop2.Model
+| DragAndDrop3 of model : Pages.CollectionDragAndDrop3.Model
 | Sliding of model : Pages.Sliding.React.Model
 //| Bucket of model : App.Pages.Bucket.Model
 
@@ -33,7 +34,9 @@ type Msg =
 | DisplayListSorting
 | RateLimitingMsg of RateLimiting.Msg
 | ToDragAndDrop
+| ToDragAndDrop3
 | DragAndDrop2Msg of Pages.CollectionDragAndDrop2.Msg
+| DragAndDrop3Msg of Pages.CollectionDragAndDrop3.Msg
 | ToSliding
 | SlidingMsg of Pages.Sliding.React.Msg
 // | BucketMsg of App.Pages.Bucket.Msg
@@ -48,12 +51,14 @@ let view model (dispatch : Msg -> unit) =
         yield h2 [Style [ CSSProp.TextAlign TextAlignOptions.Center ] ] [ str "Various Examples" ]
         yield div [ Style [ Display DisplayOptions.Table; Margin "auto" ]] [
             yield button [ OnClick (fun _ ->  ToDragAndDrop |> dispatch)] [ str "Drag And Drop" ]
+            yield button [ OnClick (fun _ ->  ToDragAndDrop3 |> dispatch)] [ str "Drag And Drop 3" ]
             yield button [ OnClick (fun _ ->  ToSliding |> dispatch)] [ str "Sliding" ]
         ]
         match model.Page with
         | ListSorting ls -> yield ListSorting.view ls (fun x -> x |> ListSortingMsg |> dispatch)
         | RateLimiting rl ->yield RateLimiting.view rl (fun x -> x |> RateLimitingMsg |> dispatch)
         | DragAndDrop2 dnd -> yield Pages.CollectionDragAndDrop2.view dnd (fun x -> x |> DragAndDrop2Msg |> dispatch )
+        | DragAndDrop3 dnd -> yield Pages.CollectionDragAndDrop3.view dnd (fun x -> x |> DragAndDrop3Msg |> dispatch )
         | Sliding m -> yield Pages.Sliding.React.view m (fun x -> SlidingMsg x |> dispatch)
         //| Bucket b -> yield Pages.Bucket.view b (fun x -> x |> BucketMsg |> dispatch)
     ]
@@ -87,6 +92,13 @@ let update msg model =
     | ToSliding, _ ->
         let mdl = Pages.Sliding.React.Model.Init()
         { Page = Sliding mdl }, Cmd.ofMsg (SlidingMsg (Pages.Sliding.React.Loading))
+    | ToDragAndDrop3, _ ->
+        printfn "to drag and drop 3"
+        let mdl = Pages.CollectionDragAndDrop3.init()
+        { Page = DragAndDrop3 mdl}, Cmd.ofMsg (DragAndDrop3Msg Pages.CollectionDragAndDrop3.Init)
+    | DragAndDrop3Msg msg, DragAndDrop3 mdl ->
+        let mdl, cmd = Pages.CollectionDragAndDrop3.update msg mdl
+        { Page = DragAndDrop3 mdl}, Cmd.map (DragAndDrop3Msg) cmd
     | _, _ -> model, Cmd.none
 
 Program.mkProgram
