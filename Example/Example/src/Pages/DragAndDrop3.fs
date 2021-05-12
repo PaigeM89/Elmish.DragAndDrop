@@ -12,13 +12,15 @@ module CollectionDragAndDrop3 =
 
   type Model = {
     DragAndDrop : DragAndDrop3.Model
-    Content : (string * string) list
+    Content : (string * ReactElement) list
+    ContentMap : Map<string, ReactElement>
   }
 
   let init() = 
     {
       DragAndDrop = DragAndDrop3.empty()
       Content = []
+      ContentMap = Map.empty
     }
 
   type Msg =
@@ -35,6 +37,7 @@ module CollectionDragAndDrop3 =
         CSSProp.MarginTop -20.
         CSSProp.TransitionDuration "0.6s"
         CSSProp.TransitionProperty "top"
+        //Display DisplayOptions.None
       ] |> SlideStyle
     let draggableStyle = [ yield! Styles.IsDraggable() ] |> DraggableStyle
     let previewStyle = [ yield! Styles.IsPreview() ] |> PreviewStyle
@@ -59,12 +62,13 @@ module CollectionDragAndDrop3 =
 
     let allDragProps cn id = [ slidingProps cn id; draggableProps cn id; draggedProps cn id; previewProps cn ]
 
+
   module Listeners =
     let draggableListener model id dispatch =
       Listeners.defaultDraggable model id dispatch
       |> DraggableListener
     let draggedListener dispatch =
-      Listeners.defaultDragListener dispatch
+      Listeners.defaultMouseMoveListener dispatch
       |> DraggedListener
     let hoverListener model id dispatch =
       Listeners.defaultHoverListener model id dispatch 
@@ -87,16 +91,23 @@ module CollectionDragAndDrop3 =
 
   let createDropArea model _class (dispatch : Msg -> unit)  content =
     let props = AreaProps [ ClassName _class ]
-    let listeners =
-      Listeners.defaultReleaseListener (mappedMsg >> dispatch)
-      |> ReleaseListener
-    DropArea.dropArea model.DragAndDrop [ props; listeners ] content
+    let listeners = [
+      Listeners.defaultReleaseListener (mappedMsg >> dispatch) |> ReleaseListener
+      Listeners.defaultMouseMoveListener (mappedMsg >> dispatch) |> MouseMoveListener
+    ]
+    DropArea.dropArea model.DragAndDrop [ props; yield! listeners ] content
 
   let view model (dispatch : Msg -> unit) =
     let content =
-      model.Content
-      |> List.map (fun c ->
-        createDraggable model (fst c) dispatch "content" (p [] [ str (snd c) ])
+      // model.Content
+      // |> List.map (fun c ->
+      //   createDraggable model (fst c) dispatch "content" (snd c)
+      // )
+      model.DragAndDrop.ElementIds()
+      |> List.head // only a single list in this example, grab the head list
+      |> List.map (fun id ->
+        let content = model.ContentMap.Item id
+        createDraggable model id dispatch "content" content
       )
     div [ ClassName "wrapper" ][
       createDropArea model "container" dispatch content
@@ -108,16 +119,16 @@ module CollectionDragAndDrop3 =
       printfn "in init"
       let content =
         [
-          "This is some content"
-          "And this is more content"
-          "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."
-          "And this is yet more content"
-          "final piece of content"
+          p [] [ str "This is some content" ]
+          p [] [ str "And this is more content" ]
+          p [] [ str "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum." ]
+          p [] [ str "And this is yet more content" ]
+          p [] [ str "final piece of content" ]
         ] |> List.mapi (fun i c -> (sprintf "content-%i" i), c)
       let ids = content |> List.map fst
-
+      let m = Map.ofList content
       let mdl = DragAndDrop3.Model.createWithItems (ids)
-      { model with Content = content; DragAndDrop = mdl }, Cmd.none
+      { model with Content = content; DragAndDrop = mdl; ContentMap = m }, Cmd.none
     | DndMsg msg ->
       let mdl, cmd = DragAndDrop3.update msg model.DragAndDrop
       { model with DragAndDrop = mdl }, Cmd.map DndMsg cmd
