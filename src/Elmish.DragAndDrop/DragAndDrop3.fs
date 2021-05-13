@@ -1,5 +1,50 @@
 namespace Elmish
 
+module List =
+  open System
+
+  let private len x = List.length x
+
+  let tryTake n li =
+    if len li < n then
+      li
+    elif n < 0 then
+      []
+    else
+      List.take n li
+
+  let removeAt index li =
+    if len li < index then
+      li
+    elif index = 0 then
+      List.tail li
+    else
+      let h = tryTake (index) li
+      let t = List.skip (index + 1) li
+      h @ t
+
+  let insertAt item index li =
+    if len li <= index then
+      li @ [item]
+    elif index <= 0 then
+      item :: li
+    else
+      let h = tryTake (index) li
+      let t = List.skip (index) li
+      h @ [item] @ t
+
+
+  let replaceAt item index li =
+    if len li <= index then
+      li @ [ item ]
+    elif index = 0 then
+      let t = List.tail li
+      item :: t
+    else
+      let h = tryTake (index) li
+      let t = List.skip (index + 1) li
+      h @ [item] @ t
+
 module DragAndDrop3 =
   open Elmish
   open Feliz
@@ -49,10 +94,12 @@ module DragAndDrop3 =
 
     type MovingStatus = {
       Slide : Slide option
-      ElementId : ElementId
+      //ElementId : ElementId
+      StartLocation : ItemLocation
     } with
         member this.setSlide (slide : Slide option) = { this with Slide = slide }
-        static member Init id = { Slide = None; ElementId = id }
+        static member Init loc = { Slide = None; StartLocation = loc }
+          //ElementId = id }
   
   open HelperTypes
 
@@ -79,6 +126,12 @@ module DragAndDrop3 =
       match this.Moving with
       | Some moving -> { this with Moving = moving.setSlide (Some s) |> Some }
       | None -> this
+
+    member this.ElementIds() =
+      this.Items
+      |> List.map (fun itemList ->
+        itemList |> List.map (fun (_, _, id) -> string id)
+      )
 
 
   /// Create an empty Model instance
@@ -122,6 +175,14 @@ module DragAndDrop3 =
       let itemsWithLocs = initItemLocations [items]
       { empty() with Items = itemsWithLocs } |> buildItemDict
 
+    let updateItemLocations (items : ItemLocation list list) =
+      items
+      |> List.mapi (fun i itemList ->
+        itemList
+        |> List.mapi (fun j (_, _, id) ->
+          (i, j, id)
+        )
+      )
 
   let getLocationForElement elementId model = 
     model.Items
@@ -190,9 +251,8 @@ module DragAndDrop3 =
   | PreviewProps of IHTMLProp list
   | SlideProps of IHTMLProp list
   | DraggableListener of (Browser.Types.MouseEvent -> unit)
-  | DraggedListener of (Browser.Types.MouseEvent -> unit)
+  //| DraggedListener of (Browser.Types.MouseEvent -> unit)
   | HoverListener of (Browser.Types.MouseEvent -> unit)
-  // | DropListener of (Browser.Types.MouseEvent -> unit)
 
   module Listeners =
     open Browser.Types
@@ -209,32 +269,32 @@ module DragAndDrop3 =
         printfn "no location found for element %s" elementId
         fun (ev : Browser.Types.MouseEvent) -> ()
 
-    let draggableWithFunc model elementId func dispatch =
-      let loc = getLocationForElement elementId model
-      match loc with
-      | Some loc ->
-        (fun (ev : MouseEvent) ->
-          ev.preventDefault()
-          func ev
-          let o = Helpers.getOffset ev (locId loc)
-          (loc, fromME ev, o) |> DragStart |> dispatch
-        )
-      | None -> (fun ev -> func ev; ())
+    // let draggableWithFunc model elementId func dispatch =
+    //   let loc = getLocationForElement elementId model
+    //   match loc with
+    //   | Some loc ->
+    //     (fun (ev : MouseEvent) ->
+    //       ev.preventDefault()
+    //       func ev
+    //       let o = Helpers.getOffset ev (locId loc)
+    //       (loc, fromME ev, o) |> DragStart |> dispatch
+    //     )
+    //   | None -> (fun ev -> func ev; ())
 
-    let defaultDragListener dispatch =
+    let defaultMouseMoveListener dispatch =
       (fun (ev : MouseEvent) ->
         ev.preventDefault()
         let c = coords ev.clientX ev.clientY
         OnDrag c |> dispatch
       )
 
-    let dragListenerWithFunc func dispatch =
-      (fun (ev : MouseEvent) ->
-        ev.preventDefault()
-        func ev
-        let c = coords ev.clientX ev.clientY
-        OnDrag c |> dispatch
-      )
+    // let mouseMoveListenerWithFunc func dispatch =
+    //   (fun (ev : MouseEvent) ->
+    //     ev.preventDefault()
+    //     func ev
+    //     let c = coords ev.clientX ev.clientY
+    //     OnDrag c |> dispatch
+    //   )
 
     /// Listener for when another element is being dragged and is moved over this element.
     let defaultHoverListener model id dispatch =
@@ -247,16 +307,16 @@ module DragAndDrop3 =
         | None -> ()
       )
 
-    let hoverListenerWithFunc model id func dispatch =
-      (fun (ev : MouseEvent) ->
-        ev.preventDefault()
-        func ev
-        let loc = getLocationForElement id model
-        match loc with
-        | Some loc ->
-          DragOver loc |> dispatch
-        | None -> ()
-      )
+    // let hoverListenerWithFunc model id func dispatch =
+    //   (fun (ev : MouseEvent) ->
+    //     ev.preventDefault()
+    //     func ev
+    //     let loc = getLocationForElement id model
+    //     match loc with
+    //     | Some loc ->
+    //       DragOver loc |> dispatch
+    //     | None -> ()
+    //   )
 
     let defaultReleaseListener dispatch =
       (fun (ev : MouseEvent) -> ev.preventDefault();  DragEnd |> dispatch)
@@ -265,7 +325,8 @@ module DragAndDrop3 =
   | AreaStyle of CSSProp list
   | AreaProps of IHTMLProp list
   | ReleaseListener of (Browser.Types.MouseEvent -> unit)
-  // | DraggedListener of (Browser.Types.MouseEvent -> unit)
+  | MouseMoveListener of (Browser.Types.MouseEvent -> unit)
+  //| DraggedListener of (Browser.Types.MouseEvent -> unit)
 
   module PropertyFolding =
 
@@ -298,9 +359,9 @@ module DragAndDrop3 =
         match x with
         | DraggedStyle s -> (s @ styles, props)
         | DraggedProps p -> (styles, p @ props)
-        | DraggedListener l ->
-          let l = (OnMouseMove l) :> IHTMLProp
-          (styles, l :: props)
+        // | DragProp.DraggedListener l ->
+        //   let l = (OnMouseMove l) :> IHTMLProp
+        //   (styles, l :: props)
         | _ -> (styles, props)
       foldWithMatcher dragProps matcher
 
@@ -357,6 +418,9 @@ module DragAndDrop3 =
           | ReleaseListener l ->
             let l = (OnMouseUp l) :> IHTMLProp
             (styles, l :: htmlProps)
+          | MouseMoveListener l ->
+            let l = (OnMouseMove l) :> IHTMLProp
+            (styles, l :: htmlProps)
         ) foldStateZero
       [
         yield Style styles
@@ -390,7 +454,7 @@ module DragAndDrop3 =
       | None ->
         let htmlProps = foldDraggable props
         div htmlProps children
-      | Some { ElementId = elementId; Slide = Some slide } ->
+      | Some { StartLocation = (startList, startIndex, elementId); Slide = Some slide } ->
         // something is being dragged and something is sliding
         if id = elementId then
           // this is the dragged item; render it & the preview
@@ -407,7 +471,7 @@ module DragAndDrop3 =
         else
           // there is an active drag, but it's not this item
           div (foldDraggableDuringDrag props) children
-      | Some { ElementId = elementId; Slide = None } ->
+      | Some { StartLocation = (startList, startIndex, elementId); Slide = None } ->
         // there is a drag, but nothing is sliding
         if id = elementId then
           // this is the dragged item; render it & the preview
@@ -458,7 +522,7 @@ module DragAndDrop3 =
     updatedLists
 
   let private insertAt (listIndex, index, id) (li: ItemLocation list) =
-    //printfn "Inserting %s to list %i at index %i" id listIndex index
+    printfn "Inserting %s to list %i at index %i" id listIndex index
     let toIds li = li |> List.map (fun (_, _, x) -> x)
     printfn "list is %A" (toIds li)
     let li = 
@@ -473,12 +537,12 @@ module DragAndDrop3 =
     items
     |> List.mapi (fun i x -> if i = listIndex then li else x)
 
-  let private moveItem (listIndex, index, oldElementId) newElementId model =
+  let moveItem (listIndex, index, oldElementId) newElementId model =
     let allItems = removeElement newElementId model
     let newList = insertAt (listIndex, index, newElementId) allItems.[listIndex]
     let newItems = replaceListAtIndex listIndex newList allItems
     match model.Moving with
-    | Some { ElementId = x } ->
+    | Some { StartLocation = (startList, startIndex, x) }  ->
       let oldelement = Browser.Dom.document.getElementById(oldElementId)
       let startCoords = coords oldelement.offsetLeft oldelement.offsetTop
       let slide = Slide.Create startCoords oldElementId
@@ -489,18 +553,86 @@ module DragAndDrop3 =
       printfn "unreachable state: moving an item but no dragged item found"
       { model with Items = newItems }, Cmd.none
 
+  let private moveItemSameList listIndex startIndex insertAtIndex li =
+    match List.tryItem listIndex li with
+    | Some innerList ->
+      // if we're inserting an item at a later point in the list...
+      if startIndex < insertAtIndex then
+        // grab everything up to the start
+        let beginning, rest = split startIndex innerList
+        // grab the middle & end sections
+        let middle, _end = split (insertAtIndex - startIndex + 1) rest
+        // this middle section should be 2 items - split it & swap them
+        let x, y = split 1 middle
+        let newList = beginning @ y @ x @ _end
+        List.replaceAt newList listIndex li
+      // otherwise we're inserting at an earlier point in the list...
+      elif startIndex > insertAtIndex then
+        // grab everything up to the start
+        let beginning, rest = split insertAtIndex innerList
+        // grab the end section
+        let middle, _end = split (startIndex - insertAtIndex) rest
+        let head, tail = split 1 _end
+        let newList = beginning @ head @ middle @ tail
+        List.replaceAt newList listIndex li
+      else
+        li
+    | None ->
+      JS.console.error("Unreachable state: cannot find list at index", listIndex)
+      li
+
+  let moveItem2 (startListIndex, startIndex) (insertListIndex, insertAtIndex) li =
+    let len x = List.length x
+    let split i li = 
+      let first =
+        if len li > i then List.take i li else li
+      let second =
+        if len li <= i then [] else  List.skip i li
+      first,second
+
+    if startListIndex = insertListIndex then
+      moveItemSameList startListIndex startIndex insertAtIndex li
+    else
+      // lists are not the same; grab the item, insert it to the new list, and remove it from the old list
+      match List.tryItem startListIndex li, List.tryItem insertListIndex li with
+      | Some startList, Some insertList ->
+        match List.tryItem startIndex startList with
+        | Some item ->
+          let newStartList = List.removeAt startIndex startList
+          let newInsertList = List.insertAt item insertAtIndex insertList
+
+          li
+          |> List.replaceAt newStartList startListIndex
+          |> List.replaceAt newInsertList insertListIndex
+        | None ->
+          JS.console.error("Unreachable state: cannot find item in list at index", startListIndex, startIndex)
+          li
+      | None, _ ->
+        JS.console.error("Unreachable state: cannot find list at index", startListIndex)
+        li
+      | _, None ->
+        JS.console.error("Unreachable state: cannot find list at index", insertListIndex)
+        li
+
   let update msg model =
     match msg with
     | DragStart (loc, startCoords, offset) ->
       //{ model with Moving = Some (locIndex loc, locId loc), None ; Cursor = startCoords; Offset = Some offset }, Cmd.none
-      let movingStatus = MovingStatus.Init (locId loc) |> Some
+      let movingStatus = MovingStatus.Init (loc) |> Some
       { model with Moving = movingStatus; Cursor = startCoords; Offset = Some offset }, Cmd.none
     | OnDrag coords ->
       {model with Cursor = coords }, Cmd.none
-    | DragOver (loc) ->
+    | DragOver (listIndex, index, elementId) ->
       match model.Moving with
-      | Some { ElementId = id } ->
-        moveItem loc id model
+      | Some { StartLocation = (startList, startIndex, startingElementId) }->
+        printfn "moving %A over %A" (startList, startIndex, startingElementId) (listIndex, index, elementId)
+        // moveItem loc id model
+        let items' =
+          moveItem2 (startList, startIndex) (listIndex, index) model.Items
+          |> Model.updateItemLocations
+        printfn "updated items are %A" items'
+        let mdl = { model with Items = items' } |> Model.buildItemDict
+        mdl, Cmd.none
       | None ->
         model, Cmd.none
     | DragEnd ->

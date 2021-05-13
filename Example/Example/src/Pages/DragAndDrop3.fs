@@ -39,9 +39,13 @@ module CollectionDragAndDrop3 =
         CSSProp.TransitionProperty "top"
         //Display DisplayOptions.None
       ] |> SlideStyle
+    let dragStyling = [
+      CSSProp.MarginLeft -130.
+      CSSProp.MarginTop -50.
+    ]
     let draggableStyle = [ yield! Styles.IsDraggable() ] |> DraggableStyle
     let previewStyle = [ yield! Styles.IsPreview() ] |> PreviewStyle
-    let draggedStyle model = [ yield! Styles.IsDragged model ] |> DraggedStyle
+    let draggedStyle model = [ yield! Styles.IsDragged model; yield! dragStyling ] |> DraggedStyle
 
     let allDragStyles model = [ slidingStyle ; draggableStyle; previewStyle; draggedStyle model ]
 
@@ -67,9 +71,9 @@ module CollectionDragAndDrop3 =
     let draggableListener model id dispatch =
       Listeners.defaultDraggable model id dispatch
       |> DraggableListener
-    let draggedListener dispatch =
-      Listeners.defaultMouseMoveListener dispatch
-      |> DraggedListener
+    // let draggedListener dispatch =
+    //   Listeners.defaultMouseMoveListener dispatch
+    //   |> DraggedListener
     let hoverListener model id dispatch =
       Listeners.defaultHoverListener model id dispatch 
       |> HoverListener
@@ -78,7 +82,7 @@ module CollectionDragAndDrop3 =
       [ 
         draggableListener model id dispatch
         hoverListener model id dispatch
-        draggedListener dispatch
+        //draggedListener dispatch
       ]
 
   let createDraggable model id (dispatch : Msg -> unit)  _class content =
