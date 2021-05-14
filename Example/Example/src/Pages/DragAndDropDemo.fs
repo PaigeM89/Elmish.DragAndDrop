@@ -66,47 +66,19 @@ module CollectionDragAndDrop3 =
 
     let allDragProps cn id = [ slidingProps cn id; draggableProps cn id; draggedProps cn id; previewProps cn ]
 
-
-  module Listeners =
-    let draggableListener model id dispatch =
-      Listeners.defaultDraggable model id dispatch
-      |> DraggableListener
-    // let draggedListener dispatch =
-    //   Listeners.defaultMouseMoveListener dispatch
-    //   |> DraggedListener
-    let hoverListener model id dispatch =
-      Listeners.defaultHoverListener model id dispatch 
-      |> HoverListener
-
-    let allListeners model id dispatch = 
-      [ 
-        draggableListener model id dispatch
-        hoverListener model id dispatch
-        //draggedListener dispatch
-      ]
-
   let createDraggable model id (dispatch : Msg -> unit)  _class content =
     let props = [
       yield! DragStyles.allDragStyles model.DragAndDrop
       yield! DragProps.allDragProps _class id
-      yield! Listeners.allListeners model.DragAndDrop id (mappedMsg >> dispatch)
     ]
-    Draggable.draggable model.DragAndDrop id props [content]
+    Draggable.draggable model.DragAndDrop id (mappedMsg >> dispatch) props [content]
 
   let createDropArea model _class (dispatch : Msg -> unit)  content =
     let props = AreaProps [ ClassName _class ]
-    let listeners = [
-      Listeners.defaultReleaseListener (mappedMsg >> dispatch) |> ReleaseListener
-      Listeners.defaultMouseMoveListener (mappedMsg >> dispatch) |> MouseMoveListener
-    ]
-    DropArea.dropArea model.DragAndDrop [ props; yield! listeners ] content
+    DropArea.dropArea model.DragAndDrop (mappedMsg >> dispatch) [ props ] content
 
   let view model (dispatch : Msg -> unit) =
     let content =
-      // model.Content
-      // |> List.map (fun c ->
-      //   createDraggable model (fst c) dispatch "content" (snd c)
-      // )
       model.DragAndDrop.ElementIds()
       |> List.head // only a single list in this example, grab the head list
       |> List.map (fun id ->
@@ -123,11 +95,11 @@ module CollectionDragAndDrop3 =
       printfn "in init"
       let content =
         [
-          p [] [ str "This is some content" ]
-          p [] [ str "And this is more content" ]
-          p [] [ str "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum." ]
-          p [] [ str "And this is yet more content" ]
-          p [] [ str "final piece of content" ]
+          div [] [ h3 [] [str "Content 0"]; p [] [ str "This is some content" ] ]
+          div [] [ h3 [] [str "Content 1"]; p [] [ str "And this is more content" ] ]
+          div [] [ h3 [] [str "Content 2"]; p [] [ str "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum." ] ]
+          div [] [ h3 [] [str "Content 3"]; p [] [ str "And this is yet more content" ] ]
+          div [] [ h3 [] [str "Content 4"]; p [] [ str "final piece of content" ] ]
         ] |> List.mapi (fun i c -> (sprintf "content-%i" i), c)
       let ids = content |> List.map fst
       let m = Map.ofList content

@@ -4,35 +4,35 @@ open System
 open Elmish
 open Expecto
 
-module MoveItemTests =
-    open Elmish.DragAndDrop3
+// module MoveItemTests =
+//     open Elmish.DragAndDrop3
 
-    let singleList = [[ "item 0" ; "item 1"; "item 2"; "item 3"; "item 4" ]]
+//     let singleList = [[ "item 0" ; "item 1"; "item 2"; "item 3"; "item 4" ]]
 
-    let modelFromList li = Model.createWithItems li
-    let modelFromMultiList li = Model.createWithItemsMultiList li
+//     let modelFromList li = Model.createWithItems li
+//     let modelFromMultiList li = Model.createWithItemsMultiList li
 
-    let model = Model.createWithItemsMultiList singleList
+//     let model = Model.createWithItemsMultiList singleList
 
-    [<Tests>]
-    let tests = 
-        testList "Drag and drop 3 move item tests" [
-            testCase "Moving an item to the same spot does not change the list" <| fun _ ->
-                let startingList = model.Items
-                let loc = (0, 0, "item 0")
-                let mdl, cmd = DragAndDrop3.moveItem loc "item 0" model
-                Expect.equal mdl.Items startingList "Should not alter the input"
-            testCase "Moving an item to the same spot at the end of the list does not change the list" <| fun _ ->
-                let startingList = model.Items
-                let loc = (0, 4, "item 4")
-                let mdl, cmd = DragAndDrop3.moveItem loc "item 4" model
-                Expect.equal mdl.Items startingList "Should not alter the input"
-            testCase "Swapping the first two items swaps those items" <| fun _ ->
-                let expected = [ "item 1" ; "item 0"; "item 2"; "item 3"; "item 4" ] |> modelFromList
-                let loc = (0, 1, "item 1")
-                let mdl, cmd = DragAndDrop3.moveItem loc "item 0" model
-                Expect.equal mdl.Items expected.Items "Should not alter the input"
-        ]
+//     [<Tests>]
+//     let tests = 
+//         testList "Drag and drop 3 move item tests" [
+//             testCase "Moving an item to the same spot does not change the list" <| fun _ ->
+//                 let startingList = model.Items
+//                 let loc = (0, 0, "item 0")
+//                 let mdl, cmd = DragAndDrop3.moveItem loc "item 0" model
+//                 Expect.equal mdl.Items startingList "Should not alter the input"
+//             testCase "Moving an item to the same spot at the end of the list does not change the list" <| fun _ ->
+//                 let startingList = model.Items
+//                 let loc = (0, 4, "item 4")
+//                 let mdl, cmd = DragAndDrop3.moveItem loc "item 4" model
+//                 Expect.equal mdl.Items startingList "Should not alter the input"
+//             testCase "Swapping the first two items swaps those items" <| fun _ ->
+//                 let expected = [ "item 1" ; "item 0"; "item 2"; "item 3"; "item 4" ] |> modelFromList
+//                 let loc = (0, 1, "item 1")
+//                 let mdl, cmd = DragAndDrop3.moveItem loc "item 0" model
+//                 Expect.equal mdl.Items expected.Items "Should not alter the input"
+//         ]
 
 module ListTests =
     open Elmish.List
@@ -197,6 +197,18 @@ module MoveItem2Tests =
                 Expect.equal output [singleList] "Should not alter the list"
             yield! testBuilder()
             yield! multiListTestBuilder()
+            testCase "Multiple singe list swaps move items correctly" <| fun _ ->
+                let input = [ "item 0"; "item 1"; "item 2"; "item 3" ]
+                let afterSwap1 = DragAndDrop3.moveItem2 (0, 3) (0, 2) [input]
+                let afterSwap2 = DragAndDrop3.moveItem2 (0, 2) (0, 1) afterSwap1
+                Expect.equal afterSwap1 [[ "item 0"; "item 1"; "item 3"; "item 2" ]] "Should do first swap correctly"
+                Expect.equal afterSwap2 [[ "item 0"; "item 3"; "item 1"; "item 2" ]] "Should do second swap correctly"
+            testCase "Swapping back and forth works correctly" <| fun _ ->
+                let input = [ "item 0"; "item 1"; "item 2"; "item 3" ]
+                let afterSwap1 = DragAndDrop3.moveItem2 (0, 3) (0, 2) [input]
+                let afterSwap2 = DragAndDrop3.moveItem2 (0, 2) (0, 3) afterSwap1
+                Expect.equal afterSwap1 [[ "item 0"; "item 1"; "item 3"; "item 2" ]] "Should do first swap correctly"
+                Expect.equal afterSwap2 [[ "item 0"; "item 1"; "item 2"; "item 3" ]] "Should do second swap correctly"
         ]
 
 
