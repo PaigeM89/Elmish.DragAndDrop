@@ -201,51 +201,51 @@ module DragAndDrop3 =
       { x = x; y = y}
 
 
-  module Styles =
+  // module Styles =
 
-    /// `IHTMLProp` properties for an item that is currently being dragged.
-    let IsDragged model : CSSProp list =
-      let coords = model.Cursor
-      [
-        CSSProp.Cursor "grabbing"
-        CSSProp.Position PositionOptions.Fixed
-        CSSProp.Left coords.x
-        CSSProp.Top coords.y
-        Opacity 0.8f
-      ]
+  //   /// `IHTMLProp` properties for an item that is currently being dragged.
+  //   let IsDragged model : CSSProp list =
+  //     let coords = model.Cursor
+  //     [
+  //       CSSProp.Cursor "grabbing"
+  //       CSSProp.Position PositionOptions.Fixed
+  //       CSSProp.Left coords.x
+  //       CSSProp.Top coords.y
+  //       Opacity 0.8f
+  //     ]
 
-    /// `IHtmlProp` properties for an item that is able to be dragged
-    let IsDraggable () : CSSProp list =
-      [
-        CSSProp.Custom ("draggable", true)
-        CSSProp.Cursor "grab"
-      ]
+  //   /// `IHtmlProp` properties for an item that is able to be dragged
+  //   let IsDraggable () : CSSProp list =
+  //     [
+  //       CSSProp.Custom ("draggable", true)
+  //       CSSProp.Cursor "grab"
+  //     ]
     
 
-    /// `IHTMLProp` properties for an item that is a preview of where a drop will go
-    let IsPreview() : CSSProp list =
-      [
-        Opacity 0.2f
-        PointerEvents "none"
-      ]
+  //   /// `IHTMLProp` properties for an item that is a preview of where a drop will go
+  //   let IsPreview() : CSSProp list =
+  //     [
+  //       Opacity 0.2f
+  //       PointerEvents "none"
+  //     ]
 
-  type SlideProp =
-  | SlideStyle of CSSProp list
-  | SlideProps of IHTMLProp list
-  | LeftOffset of float
-  | TopOffset of float
-  // how long the slide animation should take, in seconds
-  | TransitionDuration of float
+  // type SlideProp =
+  // | SlideStyle of CSSProp list
+  // | SlideProps of IHTMLProp list
+  // | LeftOffset of float
+  // | TopOffset of float
+  // // how long the slide animation should take, in seconds
+  // | TransitionDuration of float
 
-  type DragProp =
-  | DraggedStyle of CSSProp list
-  | DraggableStyle of CSSProp list
-  | PreviewStyle of CSSProp list
-  //| SlideStyle of CSSProp list
-  | DraggedProps of IHTMLProp list
-  | DraggableProps of IHTMLProp list
-  | PreviewProps of IHTMLProp list
-  //| SlideProps of IHTMLProp list
+  // type DragProp =
+  // | DraggedStyle of CSSProp list
+  // | DraggableStyle of CSSProp list
+  // | PreviewStyle of CSSProp list
+  // //| SlideStyle of CSSProp list
+  // | DraggedProps of IHTMLProp list
+  // | DraggableProps of IHTMLProp list
+  // | PreviewProps of IHTMLProp list
+  // //| SlideProps of IHTMLProp list
 
   module internal Listeners =
     open Browser.Types
@@ -293,50 +293,50 @@ module DragAndDrop3 =
     type FoldState = CSSProp list * IHTMLProp list
     let foldStateZero = ([], [])
 
-    let foldWithMatcher (props: DragProp list) matcher : IHTMLProp list =
-      let styles, htmlProps =
-        props
-        |> List.fold(fun (styles, htmlProps) x -> matcher (styles, htmlProps) x 
-        ) foldStateZero
-      [
-        yield Style styles
-        yield! htmlProps
-      ]
+  //   let foldWithMatcher (props: DragProp list) matcher : IHTMLProp list =
+  //     let styles, htmlProps =
+  //       props
+  //       |> List.fold(fun (styles, htmlProps) x -> matcher (styles, htmlProps) x 
+  //       ) foldStateZero
+  //     [
+  //       yield Style styles
+  //       yield! htmlProps
+  //     ]
 
-    // let foldDraggable (dragProps: DragProp list) : IHTMLProp list =
-    //   let matcher (styles, properties) x =
-    //     match x with
-    //     | DraggableStyle s -> (s @ styles, properties)
-    //     | DraggableProps p -> (styles, p @ properties)
-    //     | _ -> (styles, properties)
-    //   foldWithMatcher dragProps matcher
+  //   // let foldDraggable (dragProps: DragProp list) : IHTMLProp list =
+  //   //   let matcher (styles, properties) x =
+  //   //     match x with
+  //   //     | DraggableStyle s -> (s @ styles, properties)
+  //   //     | DraggableProps p -> (styles, p @ properties)
+  //   //     | _ -> (styles, properties)
+  //   //   foldWithMatcher dragProps matcher
 
-    // let foldDragged (dragProps : DragProp list) : IHTMLProp list =
-    //   let matcher (styles, props) x =
-    //     match x with
-    //     | DraggedStyle s -> (s @ styles, props)
-    //     | DraggedProps p -> (styles, p @ props)
-    //     | _ -> (styles, props)
-    //   let added = [ PointerEvents "None" ] |> DraggedStyle
-    //   foldWithMatcher (added :: dragProps) matcher
+  //   // let foldDragged (dragProps : DragProp list) : IHTMLProp list =
+  //   //   let matcher (styles, props) x =
+  //   //     match x with
+  //   //     | DraggedStyle s -> (s @ styles, props)
+  //   //     | DraggedProps p -> (styles, p @ props)
+  //   //     | _ -> (styles, props)
+  //   //   let added = [ PointerEvents "None" ] |> DraggedStyle
+  //   //   foldWithMatcher (added :: dragProps) matcher
 
-    // let foldPreview (dragProps : DragProp list) : IHTMLProp list =
-    //   let matcher (styles, props) x =
-    //     match x with
-    //     | PreviewStyle s -> (s @ styles, props)
-    //     | PreviewProps p -> (styles, p @ props)
-    //     | _ -> (styles, props)
-    //   foldWithMatcher dragProps matcher
+  //   // let foldPreview (dragProps : DragProp list) : IHTMLProp list =
+  //   //   let matcher (styles, props) x =
+  //   //     match x with
+  //   //     | PreviewStyle s -> (s @ styles, props)
+  //   //     | PreviewProps p -> (styles, p @ props)
+  //   //     | _ -> (styles, props)
+  //   //   foldWithMatcher dragProps matcher
 
 
-    // // called when something is being dragged but it's not this element
-    // let foldDraggableDuringDrag (dragProps : DragProp list) : IHTMLProp list =
-    //   let matcher (styles, properties) x =
-    //     match x with
-    //     | DraggableStyle s -> (s @ styles, properties)
-    //     | DraggableProps p -> (styles, p @ properties)
-    //     | _ -> (styles, properties)
-    //   foldWithMatcher dragProps matcher
+  //   // // called when something is being dragged but it's not this element
+  //   // let foldDraggableDuringDrag (dragProps : DragProp list) : IHTMLProp list =
+  //   //   let matcher (styles, properties) x =
+  //   //     match x with
+  //   //     | DraggableStyle s -> (s @ styles, properties)
+  //   //     | DraggableProps p -> (styles, p @ properties)
+  //   //     | _ -> (styles, properties)
+  //   //   foldWithMatcher dragProps matcher
 
     let foldDropArea props : IHTMLProp list =
       let styles, htmlProps =
@@ -367,28 +367,28 @@ module DragAndDrop3 =
 
   open PropertyFolding
 
-  type ElementProps =
-  | Styling of CSSProp list
-  | Properties of IHTMLProp list
+  // type ElementProps =
+  // | Styling of CSSProp list
+  // | Properties of IHTMLProp list
 
-  let collectElementProps (eleProps : ElementProps list) =
-    let f (styles, props) x =
-      match x with
-      | Styling s -> (s @ styles, props)
-      | Properties p -> (styles, p @ props)
-    eleProps |> List.fold (fun (s, p) x -> f (s, p) x) ([], [])
+  // let collectElementProps (eleProps : ElementProps list) =
+  //   let f (styles, props) x =
+  //     match x with
+  //     | Styling s -> (s @ styles, props)
+  //     | Properties p -> (styles, p @ props)
+  //   eleProps |> List.fold (fun (s, p) x -> f (s, p) x) ([], [])
 
-  type DraggableProp =
-  /// Styling for the element being dragged
-  | DraggedElement of ElementProps list
-  /// Styling for a preview item to show where an item will be placed when dropped
-  | HoverPreviewElement of ElementProps list
-  /// Items that are able to be dragged. Most items will be this most of the time. Think of it like "default".
-  | DraggableElement of ElementProps list
-  /// Styling for an element sliding out of the way to accomodate a drop.
-  | SlidingElement of ElementProps list
-  /// ALL elements will have this class applied; if you want to override it, you can do so with properties specific to that type of element.
-  | DefaultClass of className : string
+  // type DraggableProp =
+  // /// Styling for the element being dragged
+  // | DraggedElement of ElementProps list
+  // /// Styling for a preview item to show where an item will be placed when dropped
+  // | HoverPreviewElement of ElementProps list
+  // /// Items that are able to be dragged. Most items will be this most of the time. Think of it like "default".
+  // | DraggableElement of ElementProps list
+  // /// Styling for an element sliding out of the way to accomodate a drop.
+  // | SlidingElement of ElementProps list
+  // /// ALL elements will have this class applied; if you want to override it, you can do so with properties specific to that type of element.
+  // | DefaultClass of className : string
 
   type DraggableTemplate = {
     DraggedElementStyles : CSSProp list option
@@ -424,54 +424,54 @@ module DragAndDrop3 =
       Dispatch = dis
     }
 
-  let getDraggableElement (elements : DraggableProp list) =
-    elements
-    |> List.tryPick (fun x ->
-      match x with
-      | DraggableElement eleProps -> Some eleProps
-      | _ -> None
-    )
-    |> Option.map collectElementProps
-    |> Option.defaultValue ([], [])
+  // let getDraggableElement (elements : DraggableProp list) =
+  //   elements
+  //   |> List.tryPick (fun x ->
+  //     match x with
+  //     | DraggableElement eleProps -> Some eleProps
+  //     | _ -> None
+  //   )
+  //   |> Option.map collectElementProps
+  //   |> Option.defaultValue ([], [])
 
-  let getDraggedElement (elements : DraggableProp list) =
-    elements
-    |> List.tryPick (fun x ->
-      match x with
-      | DraggedElement eleProps -> Some eleProps
-      | _ -> None
-    )
-    |> Option.map collectElementProps
-    |> Option.defaultValue ([], [])
+  // let getDraggedElement (elements : DraggableProp list) =
+  //   elements
+  //   |> List.tryPick (fun x ->
+  //     match x with
+  //     | DraggedElement eleProps -> Some eleProps
+  //     | _ -> None
+  //   )
+  //   |> Option.map collectElementProps
+  //   |> Option.defaultValue ([], [])
 
-  let getPreviewElement (elements : DraggableProp list) =
-    elements
-    |> List.tryPick (fun x ->
-      match x with
-      | HoverPreviewElement eleProps -> Some eleProps
-      | _ -> None
-    )
-    |> Option.map collectElementProps
-    |> Option.defaultValue ([], [])
+  // let getPreviewElement (elements : DraggableProp list) =
+  //   elements
+  //   |> List.tryPick (fun x ->
+  //     match x with
+  //     | HoverPreviewElement eleProps -> Some eleProps
+  //     | _ -> None
+  //   )
+  //   |> Option.map collectElementProps
+  //   |> Option.defaultValue ([], [])
 
-  let getSlidingElement (elements : DraggableProp list) =
-    elements
-    |> List.tryPick (fun x ->
-      match x with
-      | SlidingElement eleProps -> Some eleProps
-      | _ -> None
-    )
-    |> Option.map collectElementProps
-    |> Option.defaultValue ([], [])
+  // let getSlidingElement (elements : DraggableProp list) =
+  //   elements
+  //   |> List.tryPick (fun x ->
+  //     match x with
+  //     | SlidingElement eleProps -> Some eleProps
+  //     | _ -> None
+  //   )
+  //   |> Option.map collectElementProps
+  //   |> Option.defaultValue ([], [])
 
-  let getDefaultClass (elements : DraggableProp list) =
-    elements
-    |> List.tryPick (fun x ->
-      match x with
-      | DraggableProp.DefaultClass defaultClass -> Some defaultClass
-      | _ -> None
-    )
-    |> Option.map (fun x -> (ClassName x ) :> IHTMLProp)
+  // let getDefaultClass (elements : DraggableProp list) =
+  //   elements
+  //   |> List.tryPick (fun x ->
+  //     match x with
+  //     | DraggableProp.DefaultClass defaultClass -> Some defaultClass
+  //     | _ -> None
+  //   )
+  //   |> Option.map (fun x -> (ClassName x ) :> IHTMLProp)
 
   let private foldStylesAndProps styles props =
     [
@@ -479,12 +479,12 @@ module DragAndDrop3 =
       yield! props
     ]
 
-  let private appendProperty prop (styles, props) = (styles, prop :: props)
-  let private maybeAppendProperty mprop (styles, props) =
-    match mprop with
-    | Some prop -> styles, prop :: props
-    | None -> styles, props
-  let private appendStyle style (styles, props) = (style :: styles, props)
+  // let private appendProperty prop (styles, props) = (styles, prop :: props)
+  // let private maybeAppendProperty mprop (styles, props) =
+  //   match mprop with
+  //   | Some prop -> styles, prop :: props
+  //   | None -> styles, props
+  // let private appendStyle style (styles, props) = (style :: styles, props)
 
   module private Rendering =
     let private defaultList lo = Option.defaultValue [] lo
@@ -494,7 +494,7 @@ module DragAndDrop3 =
       | Some _class -> [ (ClassName _class) :> IHTMLProp ]
       | None -> []
 
-    let renderDraggable2 msging defaultClass styles props content =
+    let renderDraggable msging defaultClass styles props content =
       let idProp = (Id msging.Id) :> IHTMLProp
       let listener = (Listeners.defaultDraggable msging.Model msging.Id msging.Dispatch) :> IHTMLProp
       let styles = defaultList styles
@@ -524,7 +524,7 @@ module DragAndDrop3 =
         let htmlProps = foldStylesAndProps styles props
         div htmlProps content
 
-    let renderDragged2 msging defaultClass styles props content =
+    let renderDragged msging defaultClass styles props content =
       let idProp = (Id msging.Id) :> IHTMLProp
       let appendedStyles = [
         PointerEvents "none"
@@ -543,68 +543,52 @@ module DragAndDrop3 =
         let htmlProps = foldStylesAndProps styles props
         div htmlProps content
 
-
-    let renderHoverPreview2 msging defaultClass styles props content =
+    let renderHoverPreview msging defaultClass styles props content =
+      let _class = defaultClassList defaultClass
+      let idProp = (Id msging.Id) :> IHTMLProp
       match styles, props with
       | Some styles, Some props ->
-        let _class = defaultClassList defaultClass
-        let idProp = (Id msging.Id) :> IHTMLProp
         let props = props @ (idProp ::_class )
         let htmlProps = foldStylesAndProps styles props
         div htmlProps content
       | Some styles, None ->
-        let _class = defaultClassList defaultClass
-        let idProp = (Id msging.Id) :> IHTMLProp
         let props =  idProp ::_class 
         let htmlProps = foldStylesAndProps styles props
         div htmlProps content
       | None, Some props ->
-        let _class = defaultClassList defaultClass
-        let idProp = (Id msging.Id) :> IHTMLProp
         let props = props @ (idProp ::_class )
         let htmlProps = foldStylesAndProps [] props
         div htmlProps content
       | _ -> Html.none //no styles or props given, don't render a preview
 
-    let renderHoverListener msging defaultClass props content = 
-      let idProp = (Id msging.Id) :> IHTMLProp
+    /// this is the "invisible" placeholder item we render so the slider can calculate where to slide to
+    let private renderSlideGhost msging defaultClass styles props content =
+      printfn "rendering slide ghost"
+      let _class = defaultClassList defaultClass
+      let idProp = (Id (msging.Id + "-ghost")) :> IHTMLProp
+      /// if the user mouses back over the ghost, the elements should move back
       let listener = (Listeners.defaultHoverListener msging.Model msging.Id msging.Dispatch) :> IHTMLProp
-      let (styles, props) = getDraggableElement props |> maybeAppendProperty defaultClass |> appendProperty listener |> appendProperty idProp
+      let additionalStyles = [
+        Opacity 0.001
+        Position PositionOptions.Absolute
+      ]
+      let styles = styles @ additionalStyles
+      let props = props @ (idProp :: (listener :: _class))
       let htmlProps = foldStylesAndProps styles props
       div htmlProps content
 
-    let renderDraggable msging defaultClass props content =
-      let idProp = (Id msging.Id) :> IHTMLProp
-      let listener = (Listeners.defaultDraggable msging.Model msging.Id msging.Dispatch) :> IHTMLProp
-      let (styles, props) = getDraggableElement props |> maybeAppendProperty defaultClass  |> appendProperty listener |> appendProperty idProp
-      let htmlProps = foldStylesAndProps styles props
-      div htmlProps content
-
-    let renderSlideGhost id defaultClass props content =
-      // in order to slide, we need to have an element at the position the sliding is going to
-      // this renders that item at 0.001 opacity, effectively invisible, so we can 
-      // use its location for math
-      let idProp = (Id (id + "-target")) :> IHTMLProp
-      let ghost = Opacity 0.001
-      let (styles, props) = getDraggableElement props |> maybeAppendProperty defaultClass |> appendStyle ghost |> appendProperty idProp
-      let htmlProps = foldStylesAndProps styles props
-      div htmlProps content
-
-    let renderSliding msging defaultClass slide props content =
-      let target = Browser.Dom.document.getElementById(msging.Id + "-target")
+    /// this is the actual sliding content
+    let private renderSlider slide msging defaultClass styles props content =
+      let _class = defaultClassList defaultClass
+      let target = Browser.Dom.document.getElementById(msging.Id + "-ghost")
       let idProp = (Id (msging.Id + "-slider")) :> IHTMLProp
-      let dur = CSSProp.TransitionDuration 5.0
-      let t = CSSProp.TransitionProperty "top"
       if isNull target then
-        // if the slider is null, then we have no yet rendered a sliding object at all
-        // render it and make it slide
+        //we don't yet have our slide target; render the slider but don't give it any movement
         let left = CSSProp.Left slide.StartCoords.x
         let top = Top slide.StartCoords.y
-        let (slideStyle, slideProps) =
-          getSlidingElement props |> maybeAppendProperty defaultClass
-          |> appendStyle left |> appendStyle top |> appendProperty idProp
-          |> appendStyle dur |> appendStyle t |> appendStyle (Position PositionOptions.Absolute)
-        let htmlProps = foldStylesAndProps slideStyle slideProps
+        let styles = styles @ [ left; top ]
+        let props = props @ (idProp :: _class)
+        let htmlProps = foldStylesAndProps styles props
         div htmlProps content
       else
         // if the slider is not null, then we have rendered a sliding object.
@@ -613,84 +597,28 @@ module DragAndDrop3 =
         let rect = target.getBoundingClientRect()
         let left = CSSProp.Left rect.left
         let top = Top rect.top
-        let (slideStyle, slideProps) =
-          getSlidingElement props |> maybeAppendProperty defaultClass
-          |> appendStyle left |> appendStyle top |> appendProperty idProp
-          |> appendStyle dur |> appendStyle t |> appendStyle (Position PositionOptions.Absolute)
-        let htmlProps = foldStylesAndProps slideStyle slideProps
+        let styles = styles @ [ left; top ]
+        let props = props @ [ idProp ]
+        let htmlProps = foldStylesAndProps styles props
         div htmlProps content
 
-    let renderDragged msging defaultClass props content =
-      printfn "rendering at coords %A" msging.Model.Cursor
-      let idProp = (Id msging.Id) :> IHTMLProp
-      let (draggedStyles, draggedProps) =
-        getDraggedElement props
-        |> maybeAppendProperty defaultClass
-        |> appendStyle (PointerEvents "none")
-        |> appendStyle (Left msging.Model.Cursor.x)
-        |> appendStyle (Top msging.Model.Cursor.y)
-        |> appendProperty idProp
-      div (foldStylesAndProps draggedStyles draggedProps) content 
-  
-  
-  /// An element that is designed to be dragged
-  type Draggable =
-
-    static member draggable (msging : Messaging) (props : DraggableProp list) content = 
-      let defaultClass = getDefaultClass props
-      let idProp = (Id msging.Id) :> IHTMLProp
-      match msging.Model.Moving with
-      | None ->
-        Rendering.renderDraggable msging defaultClass props content
-      | Some { StartLocation = (startList, startIndex, elementId); Slide = Some slide } ->
-        if msging.Id = elementId then
-          // this is the element being dragged
-          // render this element, and the preview element (todo: consider rendering the preview in the drag area?)
-          let (previewStyles, previewProps) = getPreviewElement props |> maybeAppendProperty defaultClass
-          div [] [
-            Rendering.renderDragged msging defaultClass props content
-            div (foldStylesAndProps previewStyles previewProps) content
-          ]
-        elif msging.Id = slide.ElementId then
-          // this is the sliding element
-          //cry
-          div [] [
-            Rendering.renderSlideGhost msging.Id defaultClass props content
-            Rendering.renderSliding msging defaultClass slide props content
-          ]
-        else
-          // element is not sliding, nor is it being dragged.
-          // render it with a hover listener
-          Rendering.renderHoverListener msging defaultClass props content
-      | Some { StartLocation = (startList, startIndex, elementId); Slide = None } ->
-        // an item is being dragged, but nothing is sliding
-        if msging.Id = elementId then
-          // this is the element being dragged
-          // render this element, and the preview element (todo: consider rendering the preview in the drag area?)
-          // let (draggedStyles, draggedProps) =
-          //   getDraggedElement props |> maybeAppendProperty defaultClass |> appendStyle (PointerEvents "none") |> appendProperty idProp
-          let (previewStyles, previewProps) = getPreviewElement props |> maybeAppendProperty defaultClass
-          div [] [
-            //div (foldStylesAndProps draggedStyles draggedProps) content
-            Rendering.renderDragged msging defaultClass props content
-            div (foldStylesAndProps previewStyles previewProps) content
-          ]
-        else
-          // element is not sliding, nor is it being dragged.
-          // render it with a hover listener
-          Rendering.renderHoverListener msging defaultClass props content
+    let renderSlidingElement slide msging defaultClass styles props content =
+      printfn "Rendering slide element: %A" slide
+      let slider = renderSlider slide msging defaultClass [] props content
+      let ghost = renderSlideGhost msging defaultClass [] props content
+      div [] [ slider; ghost ]
 
   let determineChildRender template msging content =
     match msging.Model.Moving with
     | None ->
       // no moving; render all content as draggable
-      Rendering.renderDraggable2 msging template.DefaultClass template.DraggableElementStyles template.DraggableElementProperties content
+      Rendering.renderDraggable msging template.DefaultClass template.DraggableElementStyles template.DraggableElementProperties content
     | Some { StartLocation = (startList, startIndex, elementId); Slide = None } ->
       // there is a drag happening, but no elements are sliding
       if msging.Id = elementId then
         //this is the element being dragged; render it and the hover preview element
-        let draggedElement = Rendering.renderDragged2 msging template.DefaultClass template.DraggedElementStyles template.DraggedElementProperties content
-        let hoverPreviewElement = Rendering.renderHoverPreview2 msging template.DefaultClass template.HoverPreviewElementStyles template.HoverPreviewElementProperties content
+        let draggedElement = Rendering.renderDragged msging template.DefaultClass template.DraggedElementStyles template.DraggedElementProperties content
+        let hoverPreviewElement = Rendering.renderHoverPreview msging template.DefaultClass template.HoverPreviewElementStyles template.HoverPreviewElementProperties content
         div [] [
           draggedElement
           hoverPreviewElement
@@ -702,15 +630,25 @@ module DragAndDrop3 =
       // there is a drag happening, and an element is sliding
       if msging.Id = elementId then
         //this is the element being dragged; render it and the hover preview element
-        let draggedElement = Rendering.renderDragged2 msging template.DefaultClass template.DraggedElementStyles template.DraggedElementProperties content
-        let hoverPreviewElement = Rendering.renderHoverPreview2 msging template.DefaultClass template.HoverPreviewElementStyles template.HoverPreviewElementProperties content
+        let draggedElement = Rendering.renderDragged msging template.DefaultClass template.DraggedElementStyles template.DraggedElementProperties content
+        let hoverPreviewElement = Rendering.renderHoverPreview msging template.DefaultClass template.HoverPreviewElementStyles template.HoverPreviewElementProperties content
         div [] [
           draggedElement
           hoverPreviewElement
         ]
       elif msging.Id = slide.ElementId then
         //this is the sliding element; render it, render the ghost, and then cry cause it's broken
-        Html.none
+        //Html.none
+        match template.SlidingElementStyles, template.SlidingElementProperties with
+        | None, None ->
+          //no styles or props given, don't render a slider, just the item itself
+          Rendering.renderDraggableWithHoverListener msging template.DefaultClass template.DraggableElementStyles template.DraggableElementProperties content
+        | Some styles, Some props ->
+          Rendering.renderSlidingElement slide msging template.DefaultClass styles props content
+        | Some styles, None ->
+          Rendering.renderSlidingElement slide msging template.DefaultClass styles [] content
+        | None, Some props ->
+          Rendering.renderSlidingElement slide msging template.DefaultClass [] props content
       else
         // render normal content with listener for mouse hovering over this spot
         Rendering.renderDraggableWithHoverListener msging template.DefaultClass template.DraggableElementStyles template.DraggableElementProperties content
@@ -718,21 +656,7 @@ module DragAndDrop3 =
 
   type DropArea =
 
-    static member dropArea model dispatch (props : DropAreaProp list) children =
-      match model.Moving with
-      | None ->
-        let htmlProps = foldDropAreaWithoutListeners props
-        div htmlProps children
-      | Some _ ->
-        let htmlProps =
-          [
-            yield! foldDropArea props
-            (Listeners.defaultReleaseListener dispatch) :> IHTMLProp
-            (Listeners.defaultMouseMoveListener dispatch) :> IHTMLProp
-          ]
-        div htmlProps children
-
-    static member dropAreaWithTemplate model dispatch (props : DropAreaProp list) template msgContentList =
+    static member dropArea model dispatch (props : DropAreaProp list) template msgContentList =
       match model.Moving with
       | None ->
         let htmlProps = foldDropAreaWithoutListeners props
@@ -836,16 +760,13 @@ module DragAndDrop3 =
     | OnDrag coords ->
       {model with Cursor = coords }, Cmd.none
     | DragOver (listIndex, index, elementId) ->
+      printfn "Drag over %A" (listIndex, index, elementId)
       match model.Moving with
       | Some { StartLocation = (startList, startIndex, startingElementId) }->
-        //printfn "moving %A over %A" (startList, startIndex, startingElementId) (listIndex, index, elementId)
-        //printfn "Starting items are %A" model.Items
         let slide = tryGetSlide elementId
-        
         let items' =
           moveItem (startList, startIndex) (listIndex, index) model.Items
           |> ModelFuncs.updateItemLocations
-        //printfn "updated items are %A" items'
         let mdl = { model with Items = items' } |> ModelFuncs.buildItemDict |> ModelFuncs.setSlideOpt slide
         let newStartLoc = ModelFuncs.getItemLocation startingElementId mdl
         match newStartLoc with

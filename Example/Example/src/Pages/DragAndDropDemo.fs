@@ -29,50 +29,6 @@ module CollectionDragAndDrop3 =
 
   let mappedMsg msg = DndMsg msg
 
-  // module DragStyles =
-  //   // let slidingStyle =
-  //   //   [
-  //   //     Position PositionOptions.Absolute
-  //   //     CSSProp.MarginLeft -20.
-  //   //     CSSProp.MarginTop -20.
-  //   //     CSSProp.TransitionDuration "0.6s"
-  //   //     CSSProp.TransitionProperty "top"
-  //   //   ] |> SlideStyle
-  //   let dragStyling = [
-  //     CSSProp.MarginLeft -130.
-  //     CSSProp.MarginTop -50.
-  //   ]
-  //   let draggableStyle = [ yield! Styles.IsDraggable() ] |> DraggableStyle
-  //   let previewStyle = [ yield! Styles.IsPreview() ] |> PreviewStyle
-  //   let draggedStyle model = [ yield! Styles.IsDragged model; yield! dragStyling ] |> DraggedStyle
-
-  //   let allDragStyles model = [  draggableStyle; previewStyle; draggedStyle model ]
-
-  // module DragProps =
-  //   let slidingProps cn id =
-  //     SlideProps [
-  //       ClassName cn
-  //       Id id
-  //     ]
-  //   let draggableProps cn id = 
-  //     DragProp.DraggableProps [
-  //       ClassName cn
-  //       Id id
-  //     ]
-
-  //   let draggedProps cn id = DragProp.DraggedProps [ ClassName cn; Id id ]
-  //   let previewProps cn = DragProp.PreviewProps [ ClassName cn ]
-
-  //   let allDragProps cn id = [ draggableProps cn id; draggedProps cn id; previewProps cn ]
-
-  // let createDraggable model id (dispatch : Msg -> unit)  _class content =
-  //   let props = [
-  //     yield! DragStyles.allDragStyles model.DragAndDrop
-  //     yield! DragProps.allDragProps _class id
-  //   ]
-  //   let slideProps = [DragProps.slidingProps _class id]
-  //   Draggable.draggable model.DragAndDrop id (mappedMsg >> dispatch) slideProps props [content]
-
   let createDraggableTemplate className = {
     DragAndDrop3.DraggableTemplate.Empty() with
       DraggedElementStyles = Some [
@@ -92,58 +48,16 @@ module CollectionDragAndDrop3 =
         Opacity 0.2
         PointerEvents "None"
       ]
+      // SlidingElementStyles = Some [
+      //   CSSProp.TransitionDuration 1.0
+      //   PointerEvents "None"
+      //   Position PositionOptions.Fixed
+      // ]
       DefaultClass = Some "content"
   }
 
-  let createDraggable model id (dispatch : Msg -> unit)  _class content =
-    let msging = Messaging.Create model.DragAndDrop id (mappedMsg >> dispatch)
-    Draggable.draggable msging [
-      DraggableProp.DraggedElement [
-        Styling [
-          // some manual fudging is required to make the dragged element appear under the cursor
-          // in the right spot
-          MarginLeft -130.
-          MarginTop -50.
-          Opacity 0.8
-          Position PositionOptions.Fixed
-          Cursor "grabbing"
-        ]
-        Properties [
-          ClassName (_class + " dragged" )
-        ]
-      ]
-      DraggableElement [
-        Styling [ 
-          Cursor "grab"
-        ]
-      ]
-      HoverPreviewElement [
-        Styling [
-          Opacity 0.2
-          PointerEvents "none"
-        ]
-      ]
-      DefaultClass "content"
-    ] [content]
-
-  let createDropArea model _class (dispatch : Msg -> unit)  content =
-    let props = AreaProps [ ClassName _class ]
-    DropArea.dropArea model.DragAndDrop (mappedMsg >> dispatch) [ props ] content
-
   let view model (dispatch : Msg -> unit) =
     let template = createDraggableTemplate "content"
-    // let content =
-    //   model.DragAndDrop.ElementIds()
-    //   |> List.map(fun li -> 
-    //     li
-    //     |> List.map (fun id ->
-    //       let content = model.ContentMap.Item id
-    //       createDraggable model id dispatch "content" content
-    //     )
-    //   )
-    //   |> List.map (fun items ->
-    //     createDropArea model "container" dispatch items
-    //   )
     let dropAreaProps =
       [
         (ClassName "container") :> IHTMLProp
@@ -157,7 +71,7 @@ module CollectionDragAndDrop3 =
           let msging = Messaging.Create model.DragAndDrop id (mappedMsg >> dispatch)
           (msging, [content])
         )
-        |> DropArea.dropAreaWithTemplate model.DragAndDrop (mappedMsg >> dispatch) [dropAreaProps] template
+        |> DropArea.dropArea model.DragAndDrop (mappedMsg >> dispatch) [dropAreaProps] template
       )
     div [ ClassName "wrapper" ] dropAreaContent
 
