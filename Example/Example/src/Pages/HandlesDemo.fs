@@ -1,6 +1,6 @@
 namespace Pages
 
-module CollectionDragAndDrop3 =
+module HandlesDemo =
   open Feliz
   open Fable.React
   open Fable.React.Props
@@ -81,19 +81,19 @@ module CollectionDragAndDrop3 =
       printfn "in init"
       let content =
         [
-          div [] [ h3 [] [str "Content 0"]; p [] [ str "This is some content" ] ]
-          div [] [ h3 [] [str "Content 1"]; p [] [ str "And this is more content" ] ]
+          div [] [ h3 [] [str "Content 0"]; p [] [ str "This is some content" ]; input [] ]
+          div [] [ h3 [] [str "Content 1"]; p [] [ str "And this is more content" ]; input [] ]
           div [] [ h3 [] [str "Content 2"]; p [] [ str "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum." ] ]
-          div [] [ h3 [] [str "Content 3"]; p [] [ str "And this is yet more content" ] ]
-          div [] [ h3 [] [str "Content 4"]; p [] [ str "some piece of content" ] ]
+          div [] [ h3 [] [str "Content 3"]; p [] [ str "And this is yet more content" ]; input [] ]
+          div [] [ h3 [] [str "Content 4"]; p [] [ str "some piece of content" ]; input [] ]
 
           div [] [ h3 [] [str "Content 5"]; p [] [ str "hello world" ] ]
           div [] [ h3 [] [str "Content 6"]; p [] [ str "this is another column" ] ]
           div [] [ h3 [] [str "Content 7"]; p [] [ str "content can be anything - including images"]; img [Src "marek-piwnicki-unsplash.jpg"; Style [ Width "128px"; Height "128px" ]] ]
         ] |> List.mapi (fun i c -> (sprintf "content-%i" i), c)
-      let ids1, ids2 = content |> List.map fst |> List.splitAt 5
+      let ids = content |> List.map fst
       let m = Map.ofList content
-      let dndModel = DragAndDrop3.ModelFuncs.createWithItemsMultiList [ids1; ids2]
+      let dndModel = DragAndDrop3.ModelFuncs.createWithItems ids
       { model with Content = content; DragAndDrop = dndModel; ContentMap = m }, Cmd.none
     | DndMsg msg ->
       let dndModel, cmd = DragAndDrop3.update msg model.DragAndDrop

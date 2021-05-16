@@ -19,7 +19,6 @@ type Msg =
 | MouseMove of Position
 | Mark of Position
 | LimiterMsg of RateLimiter.Msg<Msg>
-//| ThrottlerMsg of ThrottleEvents.Msg
 | MouseMoveWithThrottle of Position * ThrottleEvents.Msg
 | ThrottleMsg of ThrottleEvents.Msg
 
@@ -46,9 +45,6 @@ let update msg model =
     { model with Marks = pos :: model.Marks }, Cmd.none
   | MouseMoveWithThrottle (pos, throttleMsg) ->
     printfn "Handling mouse move at pos %A with throttle" pos
-    // let throttleMdl, throttleCmd = ThrottleEvents.getReleaseCmd throttleMsg model.ThrottlerState
-    // let mdl = { model with Marks = pos :: model.Marks; ThrottlerState = throttleMdl }
-    // mdl, Cmd.map ThrottleMsg throttleCmd
     let mdl = { model with Marks = pos :: model.Marks }
     // send the throttle message to be handled
     mdl, Cmd.ofMsg (ThrottleMsg throttleMsg)
@@ -108,21 +104,13 @@ let view model (dispatch : Msg -> unit) =
       | None -> ()
       | Some (ev, throttleMsg) ->
         let mousePos = pos ev.clientX ev.clientY
-        //let mouseCmd = MouseMove mousePos
         let throttleMsg = throttleMsg
         MouseMoveWithThrottle (mousePos, throttleMsg) |> dispatch
-        //cmd |> dispatch
-        //Cmd.batch [ mouseCmd; throttleMsg ] |> dispatch
     )
 
-      //MouseMove(pos ev.clientX ev.clientY) |> dispatch)
   ] [
     yield! drawElements model
     p [ Style [ CSSProp.TextAlign TextAlignOptions.Center; CSSProp.Height 1000; CSSProp.Width 1000 ]] [ str "move mouse to draw a trail" ]
-    // drawingcanvas {
-    //   Props = [ Style [Width 1000; Height 1000] ]
-    //   Redraw = Drawing(canvas model)
-    // }
   ]
 
 
