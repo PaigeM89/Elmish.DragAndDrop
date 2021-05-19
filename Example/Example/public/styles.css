@@ -3,6 +3,7 @@
   width: 50%;
 }
 
+
 .right {
   background-color: #33adff;
 }
@@ -13,10 +14,30 @@
   background-color: #0066ff;
 }
 
+.backdrop {
+  background-color: #0066ff;
+  width: 100%
+}
+
+/* .big-wrapper {
+  display: table;
+  margin: auto;
+  margin-left: 50x;
+  margin-right: 50px;
+  background-color: #0066ff;
+} */
+
 h2,
 h3,
 p {
   text-align: center;
+}
+
+input {
+  padding: 3px;
+  border: 2px solid black;
+  margin-bottom: 8px;
+  z-index: 9999;
 }
 
 .content {
@@ -29,9 +50,18 @@ p {
   min-height: 50px;
 }
 
+.li-content {
+  text-align: center;
+  background-color: #33ccff;
+  border: 1px solid black;
+}
+
+.li-dragged {
+  width: 287px;
+}
+
 .dragged {
   background-color: darkcyan;
-
 }
 
 /* drag and drop styles (stolen from dragula) */

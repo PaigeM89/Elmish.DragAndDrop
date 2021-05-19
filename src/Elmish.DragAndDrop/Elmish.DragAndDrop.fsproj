@@ -27,6 +27,7 @@
     <Compile Include="DragAndDrop.fs" />
     <Compile Include="DragAndDrop2.fs" />
     <Compile Include="DragAndDrop3.fs" />
+    <Compile Include="Handles.fs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0" PrivateAssets="All" />
