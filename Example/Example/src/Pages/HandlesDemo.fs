@@ -45,33 +45,46 @@ module HandlesDemo =
       DraggedElementProperties = Some [
         ClassName (className + " li-dragged")
       ]
-      DraggableElementStyles = Some []
+      // DraggableElementStyles = Some []
       HoverPreviewElementStyles = Some [
         Opacity 0.2
       ]
       // DefaultClass = Some className
   }
 
+  let defaultStyles = [
+    MarginTop 20
+    MarginLeft 20
+    MarginRight 20
+    MarginBottom 20
+    TextAlign TextAlignOptions.Center
+    Background "#33ccff"
+    Padding 10
+    Border "1px solid black"
+    Width 300
+    MinHeight 50
+  ]
 
   let inputValueLookup model elementId =
     Map.tryFind elementId model.ContentMap
     |> Option.defaultValue { UserInput = ""; Name = "Unknown input"}
 
 
-  let createGenerators dndModel (rootElementId : string) inputId dispatch value =
+  let createGenerators dndModel (rootElementId : string) dispatch value =
+    let handleProps = if dndModel.Moving.IsSome then [] else [ Cursor "grab" ]
     let content = [
       DragHandle.dragHandle dndModel rootElementId (mappedMsg >> dispatch) (
-        ElementGenerator.Create (sprintf "%s-handle" rootElementId) [ Cursor "grab" ] [] [h3 [] [ str (value.Name)]]
+        ElementGenerator.Create (sprintf "%s-handle" rootElementId) handleProps [] [h3 [] [ str (value.Name)]]
       )
       input [
-        Id inputId
+        // Id inputId
         DefaultValue value.UserInput
         OnChange (fun ev ->
           let v = ev.Value 
-          InputChange (inputId, v) |> (dispatch))
+          InputChange (rootElementId, v) |> (dispatch))
       ]
     ]
-    ElementGenerator.Create rootElementId [] [] content
+    ElementGenerator.Create rootElementId defaultStyles [] content
     // [
     //   DragHandle.dragHandle msging [ Style [ Cursor "grab" ]] [ h3 [] [ str (value.Name)] ]
     //   input [
@@ -83,28 +96,27 @@ module HandlesDemo =
     //   ]
     // ]
 
+  let generateRootId id = sprintf "%s-root" id
+
   let view model (dispatch : Msg -> unit) =
     let template = createDraggableTemplate "li-content"
     let dropAreaProps =
       [
         (ClassName "container") :> IHTMLProp
-      ] // |> AreaProps
+      ]
     let dropAreaContent =
       model.DragAndDrop.ElementIds()
       |> List.map (fun li ->
         li
-        |> List.map (fun (inputId) ->
-          let rootElementId = sprintf "%s-root" inputId
+        |> List.map (fun (rootElementId) ->
           let content =
-            inputValueLookup model inputId
-            |> createGenerators model.DragAndDrop rootElementId inputId dispatch
-
+            inputValueLookup model rootElementId
+            |> createGenerators model.DragAndDrop rootElementId dispatch
           rootElementId, content
         )
         |> DropArea.dropArea model.DragAndDrop (mappedMsg >> dispatch) template dropAreaProps
       )
     div [
-      //ClassName "backdrop"
       Style [
         Background "#0066ff"
         Width "100%"
@@ -119,9 +131,9 @@ module HandlesDemo =
       printfn "in init"
       let content = [
         for i in 1..7 do 
-          yield (sprintf "input-%i" i), { UserInput = ""; Name = sprintf "Input %i" i }
+          yield (sprintf "input-%i" i |> generateRootId), { UserInput = ""; Name = sprintf "Input %i" i }
       ]
-      let elementIds = content |> List.map fst
+      let elementIds = content |> List.map (fst)
       let m = content |> Map.ofList
       let dndModel = DragAndDrop.Types.Model.createWithItems elementIds
       { model with DragAndDrop = dndModel; ContentMap = m }, Cmd.none

@@ -9,6 +9,10 @@ module Draggable =
   open Elmish.DragAndDrop.Helpers.HelperTypes
 
   module internal Rendering =
+    let private orEmpty li = Option.defaultValue [] li
+    // because property ordering is important, this reverses the append on a list
+    let private appendR li1 li2 = li2 @ li1
+
     /// Renders a handle, a collection of elements with a drag listener.
     let renderHandle mdl id dispatch gen =
       let listener = (Listeners.defaultDraggable mdl id dispatch) :> IHTMLProp
@@ -16,30 +20,43 @@ module Draggable =
       |> ElementGenerator.addProps [listener]
       |> ElementGenerator.render
 
-    let renderDragged cursor eleDispatch defaultClass styles props content =
-      // let idProp = (Id eleDispatch.Id) :> IHTMLProp
-      // let appendedStyles = [
-      //   PointerEvents "none"
-      //   Left cursor.x
-      //   Top cursor.y
-      // ]
-      // let styles = (defaultList styles) @ appendedStyles
-      div [] []
+    let renderDragged config cursor id gen =
+      let idProp = (Id id) :> IHTMLProp
+      let appendedStyles = 
+        config.DraggedElementStyles |> orEmpty |> appendR [
+          PointerEvents "none"
+          Left cursor.x
+          Top cursor.y
+        ]
+      let props = config.DraggedElementProperties |> orEmpty |> appendR [idProp]
+      gen |> ElementGenerator.renderWith appendedStyles props
 
-    let renderHoverPreview msging defaultClass styles props content =
-      div [] []
+    let renderHoverPreview config id gen =
+      let idProp = (Id id) :> IHTMLProp
+      let styles = config.HoverPreviewElementStyles |> orEmpty
+      let props = config.HoverPreviewElementProperties |> orEmpty |> appendR [ idProp ]
+      gen |> ElementGenerator.renderWith styles props
+    
+    let renderWithHoverListener config model id dispatch gen =
+      let listener = Listeners.defaultHoverListener model id dispatch
+      let styles = config.ListenerElementStyles |> orEmpty
+      let props = config.ListenerElementProperties |> orEmpty |> appendR [listener]
+      gen |> ElementGenerator.renderWith styles props
 
-  let internal renderDraggable dragStatus mdl config id dispatch (gen : ElementGenerator) =
+  let internal renderDraggable dragStatus model config id dispatch (gen : ElementGenerator) =
     match dragStatus with
     | NoActiveDrag ->
       //render item as a draggable
-      //Rendering.renderHandle mdl eleDispatch gen
+      //a Generator should already have a handle defined in it (or is a handle itself).
       gen.Render()
     | ActiveDrag draggedElementId ->
       if id = draggedElementId then
-        gen.Render()
+        div [] [
+          Rendering.renderDragged config model.Cursor id gen
+          Rendering.renderHoverPreview config id gen
+        ]
       else
-        gen.Render()
+        Rendering.renderWithHoverListener config model id dispatch gen
 
   type DragHandle =
     /// Creates a handle that will drag an associated element Id
@@ -48,7 +65,6 @@ module Draggable =
     static member dragHandle mdl id dispatch (gen : ElementGenerator) = 
       match mdl.Moving with
       | None ->
-        //let eleDis = ElementDispatch.Create id dispatch
         Rendering.renderHandle mdl id dispatch gen
       | Some _ ->
         // since a handle only listens for drags, render it as normal if there is a drag.

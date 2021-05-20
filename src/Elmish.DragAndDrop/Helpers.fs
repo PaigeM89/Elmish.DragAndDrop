@@ -107,12 +107,10 @@ module BrowserHelpers =
   open HelperTypes
 
   let getDraggedElement id =
-      printfn "getting dragged element %s" id
       let doc = Browser.Dom.document
       let ele = doc.getElementById(id)
       ele
   let getOffset ev id =
-    printfn "getting offset for element %s" id
     let ele = getDraggedElement id
     let rect = ele.getBoundingClientRect()
     let coords = fromME ev

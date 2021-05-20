@@ -20,4 +20,15 @@ module DropArea =
           )
           //|> List.map (fun (eleDispatch, handle) -> render NoActiveDrag model config eleDispatch handle )
         div props children
-      | _ -> div props []
+      | Some { StartLocation = (listIndex, index, draggedElementId) } ->
+        let props = [
+          yield! props
+          Listeners.defaultReleaseListener dispatch
+          Listeners.defaultMouseMoveListener dispatch
+        ]
+        let children =
+          content
+          |> List.map (fun (elementId, gen) ->
+            renderDraggable (DragStatus.ActiveDrag draggedElementId) model config elementId dispatch gen
+          )
+        div props children

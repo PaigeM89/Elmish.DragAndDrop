@@ -156,9 +156,10 @@ module Types =
     HoverPreviewElementProperties : IHTMLProp list option
     SlidingElementStyles : CSSProp list option
     SlidingElementProperties : IHTMLProp list option
-    DraggableElementStyles : CSSProp list option
-    DraggableElementProperties : IHTMLProp list option
-    DefaultClass : string option
+    // DraggableElementStyles : CSSProp list option
+    // DraggableElementProperties : IHTMLProp list option
+    ListenerElementStyles : CSSProp list option
+    ListenerElementProperties : IHTMLProp list option
   } with
     static member Empty() = {
       DraggedElementStyles = None
@@ -167,9 +168,10 @@ module Types =
       HoverPreviewElementProperties = None
       SlidingElementStyles = None
       SlidingElementProperties = None
-      DraggableElementStyles = None
-      DraggableElementProperties = None
-      DefaultClass = None
+      // DraggableElementStyles = None
+      // DraggableElementProperties = None
+      ListenerElementStyles = None
+      ListenerElementProperties = None
     }
 
   type ElementDispatch = {
@@ -198,7 +200,8 @@ module Types =
     member this.AddContent newContent = { this with Content = this.Content @ newContent }
     member this.Render() =
       let styleProp = Style this.Styles :> IHTMLProp
-      div (styleProp :: this.Props) this.Content
+      let idProp = (Id this.Id) :> IHTMLProp
+      div (this.Props @ [idProp; styleProp]) this.Content
 
   module ElementGenerator = 
     let createGenerator id styles props content : ElementGenerator =
@@ -207,4 +210,9 @@ module Types =
     let addProps newProps (gen : ElementGenerator) = gen.AddProps newProps
     let addContent newContent (gen : ElementGenerator) = gen.AddContent newContent
     let render (gen : ElementGenerator) = gen.Render()
+    let renderWith styles props gen =
+      gen
+      |> addStyles styles
+      |> addProps props
+      |> render
 
