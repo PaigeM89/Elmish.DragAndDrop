@@ -1,13 +1,12 @@
 namespace Elmish
 
-open DragAndDrop
-
 module Handles =
   open Elmish
   open Feliz
   open Fable.React
   open Fable.React.Props
   open Fable.Core
+  open Elmish.DragAndDrop.Helpers
 
   // TODO:
   // * can't insert to end of another list unless you drag to inner part of the list, then down
@@ -344,32 +343,6 @@ module Handles =
       let props = listener :: props
       div props content
 
-    let renderDraggableWithHandle msging defaultClass (handleStyles, handleProps, handle) (styles, props, content) =
-      let idProp = (Id msging.Id) :> IHTMLProp
-      let listener = (Listeners.defaultDraggable msging.Model msging.Id msging.Dispatch) :> IHTMLProp
-      let styles = defaultList styles
-      let handle =
-        let hstyles = defaultList handleStyles
-        let hprops = listener :: (defaultList handleProps)
-        let htmlProps = foldStylesAndProps hstyles hprops
-        div htmlProps [handle]
-      match defaultClass with
-      | Some _class ->
-        let classProp = (ClassName _class) :> IHTMLProp
-        let props = [ idProp; classProp ] @ (defaultList props)
-        let htmlProps = foldStylesAndProps styles props
-        div [] [ //[ Style [ Position PositionOptions.Absolute ]] [
-          handle
-          div htmlProps content
-        ]
-      | None ->
-        let props = (defaultList props) @ [ listener ; idProp ] 
-        let htmlProps = foldStylesAndProps styles props
-        div [] [ //[ Style [ Position PositionOptions.Absolute ]] [
-          handle
-          div htmlProps content
-        ]
-
     let renderDraggableWithHoverListener msging defaultClass styles props content =
       let idProp = (Id msging.Id) :> IHTMLProp
       let styles = defaultList styles
@@ -472,15 +445,6 @@ module Handles =
   let determineChildRender template msging content =
     match msging.Model.Moving with
     | None ->
-      // nothing is being dragged ; render all content as draggable
-      // match template.Handle with
-      // | Some handle ->
-      //   Rendering.renderDraggableWithHandle
-      //     msging
-      //     template.DefaultClass 
-      //     (template.HandlesStyles, template.HandlesProperties, handle)
-      //     (template.DraggableElementStyles, template.DraggableElementProperties, content)
-      // | None ->
       Rendering.renderDraggable msging template.DefaultClass template.DraggableElementStyles template.DraggableElementProperties content
     | Some { StartLocation = (startList, startIndex, elementId); Slide = None } ->
       // there is a drag happening, but no elements are sliding
@@ -522,7 +486,8 @@ module Handles =
         Rendering.renderDraggableWithHoverListener msging template.DefaultClass template.DraggableElementStyles template.DraggableElementProperties content
 
 
-  type DragHandle = 
+  type DragHandle =
+  
     static member dragHandle msging  props children = 
       match msging.Model.Moving with
       | None ->
@@ -536,11 +501,9 @@ module Handles =
       match model.Moving with
       | None ->
         let htmlProps = foldDropAreaWithoutListeners props
-        //let children = msgContentList |> List.map snd
         let children = 
           msgContentList
           |> List.map(fun (msging, content) ->
-            //content
             determineChildRender template msging content 
           )
         div htmlProps children
@@ -551,10 +514,9 @@ module Handles =
             (Listeners.defaultReleaseListener dispatch) :> IHTMLProp
             (Listeners.defaultMouseMoveListener dispatch) :> IHTMLProp
           ]
-        let children = //msgContentList |> List.map snd
+        let children =
           msgContentList
           |> List.map(fun (msging, content) ->
-            //content
             determineChildRender template msging content 
           )
         div htmlProps children

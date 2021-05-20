@@ -3,6 +3,10 @@
   width: 50%;
 }
 
+.horizontal-container {
+  display: table-cell;
+  width: 100%;
+}
 
 .right {
   background-color: #33adff;

@@ -1,7 +1,7 @@
-namespace Elmish
+namespace Elmish.DragAndDrop
 
-
-module DragAndDrop =
+[<AutoOpen>]
+module Types =
   open Elmish
   open Fable.React
   open Fable.React.Props
@@ -176,7 +176,7 @@ module DragAndDrop =
     Id : ElementId
     Dispatch : (Msg -> unit)
   } with
-    static member Create mdl id dis = {
+    static member Create id dis = {
       Id = id
       Dispatch = dis
     }
@@ -185,155 +185,26 @@ module DragAndDrop =
   | NoActiveDrag
   | ActiveDrag of draggedElementId : ElementId
 
-  module internal Rendering =
-    /// Renders a handle, a collection of elements with a drag listener.
-    let renderHandle mdl eleDispatch props content =
-      let listener = (Listeners.defaultDraggable mdl eleDispatch.Id eleDispatch.Dispatch) :> IHTMLProp
-      let props = listener :: props
-      div props content
-
-    let renderDragged cursor eleDispatch defaultClass styles props content =
-      // let idProp = (Id eleDispatch.Id) :> IHTMLProp
-      // let appendedStyles = [
-      //   PointerEvents "none"
-      //   Left cursor.x
-      //   Top cursor.y
-      // ]
-      // let styles = (defaultList styles) @ appendedStyles
-      div [] []
-
-    let renderHoverPreview msging defaultClass styles props content =
-      div [] []
-
-  let private render dragStatus mdl config eleDispatch props content =
-    match dragStatus with
-    | NoActiveDrag ->
-      //render item as a draggable
-      Rendering.renderHandle mdl eleDispatch props content
-    | ActiveDrag draggedElementId ->
-      if eleDispatch.Id = draggedElementId then
-        div [] []
-      else
-        div [] []
-      
-
-  type DragHandle2 = {
+  type ElementGenerator = {
+    Id : ElementId
     Styles : CSSProp list
     Props : IHTMLProp list
     Content : ReactElement list
-    ClassName : string option
-    HandleForElement : ElementId
   } with
-    static member dragHandle2 cn h styles props content = {
-      ClassName = cn
-      HandleForElement = h
-      Styles = styles
-      Props = props
-      Content = content
-    }
+    static member Create id styles props content : ElementGenerator =
+      { Id = id; Styles = styles; Props = props; Content = content }
+    member this.AddStyles newStyles = { this with Styles = this.Styles @ newStyles }
+    member this.AddProps newProps = { this with Props = this.Props @ newProps }
+    member this.AddContent newContent = { this with Content = this.Content @ newContent }
+    member this.Render() =
+      let styleProp = Style this.Styles :> IHTMLProp
+      div (styleProp :: this.Props) this.Content
 
+  module ElementGenerator = 
+    let createGenerator id styles props content : ElementGenerator =
+      { Id = id; Styles = styles; Props = props; Content = content }
+    let addStyles newStyles (gen : ElementGenerator) = gen.AddStyles newStyles
+    let addProps newProps (gen : ElementGenerator) = gen.AddProps newProps
+    let addContent newContent (gen : ElementGenerator) = gen.AddContent newContent
+    let render (gen : ElementGenerator) = gen.Render()
 
-  type DragHandle =
-    /// Creates a handle that will drag an associated element Id
-    /// Note that the elementId set here does not have to be the id of the handle, but can be
-    /// a parent element that you want to drag
-    static member dragHandle mdl eleDispatch props children = 
-      match mdl.Moving with
-      | None ->
-        Rendering.renderHandle mdl eleDispatch props children
-      | Some _ ->
-        div props children
-
-  type DropArea =
-    static member dropArea model dispatch config props (handles : DragHandle2 list) =
-      match model.Moving with
-      | None ->
-        let children =
-          handles
-          //|> List.map (fun (eleDispatch, handle) -> render NoActiveDrag model config eleDispatch handle )
-        div [] []
-      | _ -> div [] []
-
-  module internal ItemMoving =
-    open Elmish.DragAndDrop
-    open Fable.Core
-
-    let private moveItemSameList listIndex startIndex insertAtIndex li =
-      match List.tryItem listIndex li with
-      | Some innerList ->
-        // if we're inserting an item at a later point in the list...
-        if startIndex < insertAtIndex then
-          // grab everything up to the start
-          let beginning, rest = List.split startIndex innerList
-          // grab the middle & end sections
-          let middle, _end = List.split (insertAtIndex - startIndex + 1) rest
-          // this middle section should be 2 items - split it & swap them
-          let x, y = List.split 1 middle
-          let newList = beginning @ y @ x @ _end
-          List.replaceAt newList listIndex li
-        // otherwise we're inserting at an earlier point in the list...
-        elif startIndex > insertAtIndex then
-          // grab everything up to the start
-          let beginning, rest = List.split insertAtIndex innerList
-          // grab the end section
-          let middle, _end = List.split (startIndex - insertAtIndex) rest
-          let head, tail = List.split 1 _end
-          let newList = beginning @ head @ middle @ tail
-          List.replaceAt newList listIndex li
-        else
-          li
-      | None ->
-        JS.console.error("Unreachable state: cannot find list at index", listIndex)
-        li
-
-    let moveItem (startListIndex, startIndex) (insertListIndex, insertAtIndex) li =
-      if startListIndex = insertListIndex then
-        moveItemSameList startListIndex startIndex insertAtIndex li
-      else
-        // lists are not the same; grab the item, insert it to the new list, and remove it from the old list
-        match List.tryItem startListIndex li, List.tryItem insertListIndex li with
-        | Some startList, Some insertList ->
-          match List.tryItem startIndex startList with
-          | Some item ->
-            let newStartList = List.removeAt startIndex startList
-            let newInsertList = List.insertAt item insertAtIndex insertList
-
-            li
-            |> List.replaceAt newStartList startListIndex
-            |> List.replaceAt newInsertList insertListIndex
-          | None ->
-            JS.console.error("Unreachable state: cannot find item in list at index", startListIndex, startIndex)
-            li
-        | None, _ ->
-          JS.console.error("Unreachable state: cannot find list at index", startListIndex)
-          li
-        | _, None ->
-          JS.console.error("Unreachable state: cannot find list at index", insertListIndex)
-          li
-  
-  let update msg model =
-    match msg with
-    | DragStart (loc, startCoords, offset) ->
-      let movingStatus = MovingStatus.Init (loc) |> Some
-      { model with Moving = movingStatus; Cursor = startCoords; Offset = Some offset }, Cmd.none
-    | OnDrag coords ->
-      {model with Cursor = coords }, Cmd.none
-    | DragOver (listIndex, index, elementId) ->
-      match model.Moving with
-      | Some { StartLocation = (startList, startIndex, startingElementId) }->
-        let slide = None //tryGetSlide elementId
-        let items' =
-          ItemMoving.moveItem (startList, startIndex) (listIndex, index) model.Items
-          |> Model.updateItemLocations
-        let mdl = { model with Items = items' } |> Model.buildItemDict // |> Model.setSlideOpt slide
-        let newStartLoc = Model.getItemLocation startingElementId mdl
-        match newStartLoc with
-        | None ->
-          mdl, Cmd.none
-        | Some loc ->
-          let mdl = Model.setDragSource loc mdl
-          mdl, Cmd.none
-      | None ->
-        model, Cmd.none
-    | DragEnd ->
-      { model with Moving = None; Offset = None }, Cmd.none

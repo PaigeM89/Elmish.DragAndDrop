@@ -11,6 +11,7 @@
     <Compile Include="Pages/Sliding.fs" />
     <Compile Include="Pages/DragAndDrop2.fs" />
     <Compile Include="Pages/SingleListDemo.fs" />
+    <Compile Include="Pages/HorizontalDemo.fs" />
     <Compile Include="Pages/HandlesDemo.fs" />
     <Compile Include="Pages/MultiListDemo.fs" />
     <Compile Include="App.fs" />

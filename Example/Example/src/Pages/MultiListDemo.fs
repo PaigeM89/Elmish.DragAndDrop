@@ -48,11 +48,6 @@ module MultiListDemo =
         Opacity 0.2
         PointerEvents "None"
       ]
-      // SlidingElementStyles = Some [
-      //   CSSProp.TransitionDuration 1.0
-      //   PointerEvents "None"
-      //   Position PositionOptions.Fixed
-      // ]
       DefaultClass = Some "content"
   }
 

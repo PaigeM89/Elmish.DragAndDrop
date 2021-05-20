@@ -24,8 +24,12 @@
     <Compile Include="AssemblyInfo.fs" />
     <Compile Include="Helpers.fs" />
     <Compile Include="RateLimiter.fs" />
-    <Compile Include="DragAndDrop.fs" />
-    <Compile Include="DragAndDrop2.fs" />
+    <!-- <Compile Include="DragAndDrop.fs" /> -->
+    <Compile Include="Types.fs" />
+    <Compile Include="Draggable.fs" />
+    <Compile Include="DropArea.fs" />
+    <Compile Include="Update.fs" />
+    <!-- <Compile Include="DragAndDrop2.fs" /> -->
     <Compile Include="DragAndDrop3.fs" />
     <Compile Include="Handles.fs" />
   </ItemGroup>

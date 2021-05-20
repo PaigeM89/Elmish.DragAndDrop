@@ -8,36 +8,33 @@ module HandlesDemo =
   open Browser.Types
   open Elmish
   open Elmish.React
-  open Elmish.Handles
+  open Elmish.DragAndDrop
+  // open Elmish.Handles
 
 
   type ContentKey = string
   type ContentValue = { UserInput : string; Name : string}
 
   type Model = {
-    DragAndDrop : Handles.Model
-    //Content : (string * string) list
+    DragAndDrop : DragAndDrop.Types.Model
     ContentMap : Map<ContentKey, ContentValue>
-    //InputValueMap: Map<string, string>
   }
 
   let init() = 
     {
-      DragAndDrop = Handles.empty()
-      //Content = []
+      DragAndDrop = DragAndDrop.Types.Model.Empty()
       ContentMap = Map.empty
-      //InputValueMap = Map.empty
     }
 
   type Msg =
   | Init
-  | DndMsg of Handles.Msg
+  | DndMsg of DragAndDrop.Types.Msg
   | InputChange of elementId : string * newValue : string
 
   let mappedMsg msg = DndMsg msg
 
   let createDraggableTemplate className = {
-    Handles.DraggableTemplate.Empty() with
+    DragAndDrop.Types.DragAndDropConfig.Empty() with
       DraggedElementStyles = Some [
           MarginLeft -130.
           MarginTop -50.
@@ -48,31 +45,11 @@ module HandlesDemo =
       DraggedElementProperties = Some [
         ClassName (className + " li-dragged")
       ]
-      DraggableElementStyles = Some [
-//        Cursor "grab"
-      ]
+      DraggableElementStyles = Some []
       HoverPreviewElementStyles = Some [
         Opacity 0.2
-        // PointerEvents "None"
       ]
-      // SlidingElementStyles = Some [
-      //   CSSProp.TransitionDuration 1.0
-      //   PointerEvents "None"
-      //   Position PositionOptions.Fixed
-      // ]
-      DefaultClass = Some className
-      // HandlesStyles = Some [
-      //   Cursor "grab"
-      //   // Left "35px"
-      //   // Top "50px"
-      //   // CSSProp.Float FloatOptions.Left
-      //   // Position PositionOptions.Relative
-      //   Left 0
-      //   Top 0
-      //   Position PositionOptions.Absolute
-      //   BackgroundColor "3fd4d8"
-      // ]
-      // Handle = Html.em [ str "Grab me!" ] |> Some
+      // DefaultClass = Some className
   }
 
 
@@ -81,38 +58,57 @@ module HandlesDemo =
     |> Option.defaultValue { UserInput = ""; Name = "Unknown input"}
 
 
-  let genContent msging inputId dispatch value =
-    [
-      DragHandle.dragHandle msging [ Style [ Cursor "grab" ]] [ h3 [] [ str (value.Name)] ]
+  let createGenerators dndModel (rootElementId : string) inputId dispatch value =
+    let content = [
+      DragHandle.dragHandle dndModel rootElementId (mappedMsg >> dispatch) (
+        ElementGenerator.Create (sprintf "%s-handle" rootElementId) [ Cursor "grab" ] [] [h3 [] [ str (value.Name)]]
+      )
       input [
         Id inputId
         DefaultValue value.UserInput
-        OnChange (fun ev -> 
+        OnChange (fun ev ->
           let v = ev.Value 
           InputChange (inputId, v) |> (dispatch))
       ]
     ]
+    ElementGenerator.Create rootElementId [] [] content
+    // [
+    //   DragHandle.dragHandle msging [ Style [ Cursor "grab" ]] [ h3 [] [ str (value.Name)] ]
+    //   input [
+    //     Id inputId
+    //     DefaultValue value.UserInput
+    //     OnChange (fun ev -> 
+    //       let v = ev.Value 
+    //       InputChange (inputId, v) |> (dispatch))
+    //   ]
+    // ]
 
   let view model (dispatch : Msg -> unit) =
     let template = createDraggableTemplate "li-content"
     let dropAreaProps =
       [
         (ClassName "container") :> IHTMLProp
-      ] |> AreaProps
+      ] // |> AreaProps
     let dropAreaContent =
       model.DragAndDrop.ElementIds()
       |> List.map (fun li ->
         li
-        |> List.map (fun (id) ->
-          let msging = Messaging.Create model.DragAndDrop id (mappedMsg >> dispatch)
-          let content = inputValueLookup model id |> genContent msging id dispatch
+        |> List.map (fun (inputId) ->
+          let rootElementId = sprintf "%s-root" inputId
+          let content =
+            inputValueLookup model inputId
+            |> createGenerators model.DragAndDrop rootElementId inputId dispatch
 
-          msging, content
+          rootElementId, content
         )
-        |> DropArea.dropArea model.DragAndDrop (mappedMsg >> dispatch) [dropAreaProps] template
+        |> DropArea.dropArea model.DragAndDrop (mappedMsg >> dispatch) template dropAreaProps
       )
     div [
-      ClassName "backdrop"
+      //ClassName "backdrop"
+      Style [
+        Background "#0066ff"
+        Width "100%"
+      ]
     ][
       div [ ClassName "wrapper" ] dropAreaContent
     ]
@@ -127,10 +123,10 @@ module HandlesDemo =
       ]
       let elementIds = content |> List.map fst
       let m = content |> Map.ofList
-      let dndModel = Handles.ModelFuncs.createWithItems elementIds
+      let dndModel = DragAndDrop.Types.Model.createWithItems elementIds
       { model with DragAndDrop = dndModel; ContentMap = m }, Cmd.none
     | DndMsg msg ->
-      let dndModel, cmd = Handles.update msg model.DragAndDrop
+      let dndModel, cmd = DragAndDrop.Update.update msg model.DragAndDrop
       { model with DragAndDrop = dndModel }, Cmd.map DndMsg cmd
     | InputChange (elementId, newValue) ->
       printfn "input change: %A value %A" elementId newValue

@@ -1,13 +1,12 @@
 namespace Elmish
 
-open DragAndDrop
-
 module DragAndDrop3 =
   open Elmish
   open Feliz
   open Fable.React
   open Fable.React.Props
   open Fable.Core
+  open Elmish.DragAndDrop.Helpers
 
   // TODO:
   // * can't insert to end of another list unless you drag to inner part of the list, then down
@@ -318,10 +317,41 @@ module DragAndDrop3 =
   module private Rendering =
     let private defaultList lo = Option.defaultValue [] lo
 
-    let defaultClassList defaultClass = 
+    let private defaultClassList defaultClass = 
       match defaultClass with
       | Some _class -> [ (ClassName _class) :> IHTMLProp ]
       | None -> []
+
+    /// Renders a handle, a collection of elements with a drag listener.
+    let renderHandle dragMsging props content =
+      let listener = (Listeners.defaultDraggable dragMsging.Model dragMsging.Id dragMsging.Dispatch) :> IHTMLProp
+      let props = listener :: props
+      div props content
+
+    type DraggableMode =
+    /// The draggable is ready for a user to click it
+    | ListenForDrag
+    /// The draggable is ready for a user to hover a dragged item over it
+    | ListenForHover
+    /// The draggable is not listening for any event
+    | NoListen
+
+    let renderDraggableNew mode msging defaultClass styles props content =
+      let idProp = (Id msging.Id) :> IHTMLProp
+      let styles = defaultList styles
+      let classList = defaultClassList defaultClass
+      match mode with
+      | NoListen ->
+        let props = idProp :: classList @ (defaultList props)
+        let htmlProps = foldStylesAndProps styles props
+        div htmlProps content
+      | ListenForDrag ->
+        let props = idProp :: classList @ (defaultList props)
+        let htmlProps = foldStylesAndProps styles props
+        Html.none
+      | ListenForHover -> 
+        Html.none
+
 
     let renderDraggable msging defaultClass styles props content =
       let idProp = (Id msging.Id) :> IHTMLProp
@@ -480,7 +510,19 @@ module DragAndDrop3 =
       else
         // render normal content with listener for mouse hovering over this spot
         Rendering.renderDraggableWithHoverListener msging template.DefaultClass template.DraggableElementStyles template.DraggableElementProperties content
+  
+  type Draggable =
+    static member draggable msging handle props children =
+      Html.none
 
+  type DragHandle =
+  
+    static member dragHandle msging props children = 
+      match msging.Model.Moving with
+      | None ->
+        Rendering.renderHandle msging props children
+      | Some _ ->
+        div props children
 
   type DropArea =
 
@@ -507,6 +549,30 @@ module DragAndDrop3 =
             determineChildRender template msging content 
           )
         div htmlProps children
+    
+    // static member dropAreaOfDragHandles model dispatch (props : DropAreaProp list) template (msgHandlesList : (Messaging * DragHandle) list) =
+    //   match model.Moving with
+    //   | None ->
+    //     let htmlProps = foldDropAreaWithoutListeners props
+    //     let children = 
+    //       msgHandlesList
+    //       |> List.map(fun (msging, content) ->
+    //         determineChildRender template msging content 
+    //       )
+    //     div htmlProps children
+    //   | Some _ ->
+    //     let htmlProps =
+    //       [
+    //         yield! foldDropArea props
+    //         (Listeners.defaultReleaseListener dispatch) :> IHTMLProp
+    //         (Listeners.defaultMouseMoveListener dispatch) :> IHTMLProp
+    //       ]
+    //     let children = 
+    //       msgHandlesList
+    //       |> List.map(fun (msging, content) ->
+    //         determineChildRender template msging content 
+    //       )
+    //     div htmlProps children
 
   let private split i li =
     let len x = List.length x

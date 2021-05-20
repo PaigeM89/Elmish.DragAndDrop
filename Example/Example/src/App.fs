@@ -5,14 +5,13 @@ open Elmish.React
 open Fable.React
 open Fable.React.Props
 
-
 type Page =
-//| ListSorting of model : ListSorting.Model
 | RateLimiting of model :  RateLimiting.Model
 | DragAndDrop2 of model : Pages.CollectionDragAndDrop2.Model
 | SingleListDemo of model : Pages.SingleListDemo.Model
 | MultiListDemo of model : Pages.MultiListDemo.Model
 | HandlesDemo of model : Pages.HandlesDemo.Model
+| HorizontalDemo of model : Pages.HorizontalDemo.Model
 | Sliding of model : Pages.Sliding.React.Model
 
 type Model = {
@@ -24,18 +23,18 @@ let init() =
     { Page = DragAndDrop2 m}, Cmd.none
 
 type Msg =
-//| ListSortingMsg of ListSorting.Msg
-// | DisplayListSorting
 | RateLimitingMsg of RateLimiting.Msg
 | ToDragAndDrop
 | ToDragAndDrop3
 | DragAndDrop2Msg of Pages.CollectionDragAndDrop2.Msg
 | SingleListDemoMsg of Pages.SingleListDemo.Msg
 | MultiListDemoMsg of Pages.MultiListDemo.Msg
+| HorizontalDemoMsg of Pages.HorizontalDemo.Msg
 | HandlesDemoMsg of Pages.HandlesDemo.Msg
 | ToSingleListDemo
 | ToMultiListDemo
 | ToHandlesDemo
+| ToHorizontalDemo
 | ToSliding
 | SlidingMsg of Pages.Sliding.React.Msg
 
@@ -51,6 +50,7 @@ let view model (dispatch : Msg -> unit) =
             yield button [ OnClick (fun _ ->  ToSingleListDemo |> dispatch)] [ str "Single List Demo" ]
             yield button [ OnClick (fun _ ->  ToMultiListDemo |> dispatch)] [ str "Multi List Demo" ]
             yield button [ OnClick (fun _ ->  ToHandlesDemo |> dispatch)] [ str "Handles Demo" ]
+            yield button [ OnClick (fun _ ->  ToHorizontalDemo |> dispatch)] [ str "Horizontal Demo"]
             yield button [ OnClick (fun _ ->  ToSliding |> dispatch)] [ str "Sliding" ]
         ]
         match model.Page with
@@ -60,17 +60,13 @@ let view model (dispatch : Msg -> unit) =
         | SingleListDemo dnd -> yield Pages.SingleListDemo.view dnd (fun x -> x |> SingleListDemoMsg |> dispatch )
         | MultiListDemo dnd -> yield Pages.MultiListDemo.view dnd (fun x -> x |> MultiListDemoMsg |> dispatch )
         | HandlesDemo dnd -> yield Pages.HandlesDemo.view dnd (fun x -> x |> HandlesDemoMsg |> dispatch )
+        | HorizontalDemo dnd -> yield Pages.HorizontalDemo.view dnd (fun x -> x |> HorizontalDemoMsg |> dispatch )
         | Sliding m -> yield Pages.Sliding.React.view m (fun x -> SlidingMsg x |> dispatch)
     ]
 
 
 let update msg model =
     match msg, model.Page with
-    // | ListSortingMsg m, ListSorting mdl ->
-    //     let mdl, cmd = ListSorting.update m mdl
-    //     { Page = ListSorting mdl }, Cmd.map ListSortingMsg cmd
-    // | DisplayListSorting, _ ->
-    //     { Page = ListSorting (ListSorting.Model.Init()) }, Cmd.none
     | RateLimitingMsg msg, RateLimiting mdl ->
         let mdl, cmd = RateLimiting.update msg mdl
         { Page = RateLimiting mdl}, Cmd.map RateLimitingMsg cmd
@@ -105,6 +101,12 @@ let update msg model =
     | HandlesDemoMsg msg, HandlesDemo mdl ->
         let mdl, cmd = Pages.HandlesDemo.update msg mdl
         { Page = HandlesDemo mdl}, Cmd.map (HandlesDemoMsg) cmd
+    | ToHorizontalDemo, _ ->
+        let mdl = Pages.HorizontalDemo.init()
+        { Page = HorizontalDemo mdl}, Cmd.ofMsg (HorizontalDemoMsg Pages.HorizontalDemo.Init)
+    | HorizontalDemoMsg msg, HorizontalDemo mdl ->
+        let mdl, cmd = Pages.HorizontalDemo.update msg mdl
+        { Page = HorizontalDemo mdl}, Cmd.map (HorizontalDemoMsg) cmd
     | _, _ -> model, Cmd.none
 
 Program.mkProgram
