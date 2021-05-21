@@ -33,7 +33,7 @@ module HandlesDemo =
 
   let mappedMsg msg = DndMsg msg
 
-  let createDraggableTemplate className = {
+  let dragAndDropConfig = {
     DragAndDrop.Types.DragAndDropConfig.Empty() with
       DraggedElementStyles = Some [
           MarginLeft -130.
@@ -41,15 +41,11 @@ module HandlesDemo =
           Opacity 0.8
           Position PositionOptions.Fixed
           Cursor "grabbing"
+          Background "#00ffff"
       ]
-      DraggedElementProperties = Some [
-        ClassName (className + " li-dragged")
-      ]
-      // DraggableElementStyles = Some []
       HoverPreviewElementStyles = Some [
         Opacity 0.2
       ]
-      // DefaultClass = Some className
   }
 
   let defaultStyles = [
@@ -71,35 +67,24 @@ module HandlesDemo =
 
 
   let createGenerators dndModel (rootElementId : string) dispatch value =
-    let handleProps = if dndModel.Moving.IsSome then [] else [ Cursor "grab" ]
+    let handleStyles = if dndModel.Moving.IsSome then [] else [ Cursor "grab" ]
     let content = [
       DragHandle.dragHandle dndModel rootElementId (mappedMsg >> dispatch) (
-        ElementGenerator.Create (sprintf "%s-handle" rootElementId) handleProps [] [h3 [] [ str (value.Name)]]
+        ElementGenerator.Create (sprintf "%s-handle" rootElementId) handleStyles [] [h3 [] [ str (value.Name)]]
       )
       input [
-        // Id inputId
         DefaultValue value.UserInput
         OnChange (fun ev ->
           let v = ev.Value 
+          // we track the current state of user input by the root draggable's ID, not the input id (which we dont set)
           InputChange (rootElementId, v) |> (dispatch))
       ]
     ]
     ElementGenerator.Create rootElementId defaultStyles [] content
-    // [
-    //   DragHandle.dragHandle msging [ Style [ Cursor "grab" ]] [ h3 [] [ str (value.Name)] ]
-    //   input [
-    //     Id inputId
-    //     DefaultValue value.UserInput
-    //     OnChange (fun ev -> 
-    //       let v = ev.Value 
-    //       InputChange (inputId, v) |> (dispatch))
-    //   ]
-    // ]
 
   let generateRootId id = sprintf "%s-root" id
 
   let view model (dispatch : Msg -> unit) =
-    let template = createDraggableTemplate "li-content"
     let dropAreaProps =
       [
         (ClassName "container") :> IHTMLProp
@@ -114,7 +99,7 @@ module HandlesDemo =
             |> createGenerators model.DragAndDrop rootElementId dispatch
           rootElementId, content
         )
-        |> DropArea.dropArea model.DragAndDrop (mappedMsg >> dispatch) template dropAreaProps
+        |> DropArea.dropArea model.DragAndDrop (mappedMsg >> dispatch) dragAndDropConfig dropAreaProps
       )
     div [
       Style [
@@ -141,7 +126,6 @@ module HandlesDemo =
       let dndModel, cmd = DragAndDrop.Update.update msg model.DragAndDrop
       { model with DragAndDrop = dndModel }, Cmd.map DndMsg cmd
     | InputChange (elementId, newValue) ->
-      printfn "input change: %A value %A" elementId newValue
       match Map.tryFind elementId model.ContentMap with
       | Some oldContent ->
         let newValue = { oldContent with UserInput = newValue}

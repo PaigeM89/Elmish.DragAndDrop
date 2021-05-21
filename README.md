@@ -2,9 +2,17 @@
 
 Heavily inspired by / shamelessly copied off of [dnd-list for Elm](https://annaghi.github.io/dnd-list/introduction/basic), this implements drag-and-drop sorting functionality for the Elmish architecture in Fable.
 
+Features in progress/TODO:
+* Sliding animations
+* Full documentation
+* More examples
+  * Horizontal demo
+  * Grid demo
+* Allow CSS classes to be added to generated content
+
 **Contributions Welcome**
 
-I don't currently have the time to fully implement all the features that may needed.
+I don't currently have the time to fully implement all the features that may be needed.
 
 ---
 
