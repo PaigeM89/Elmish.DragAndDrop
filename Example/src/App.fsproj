@@ -21,7 +21,7 @@
     <PackageReference Include="Fable.Core" Version="3.2.3" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\..\src\Elmish.DragAndDrop\Elmish.DragAndDrop.fsproj" />
+    <ProjectReference Include="..\..\src\Elmish.DragAndDrop\Elmish.DragAndDrop.fsproj" />
   </ItemGroup>
-  <Import Project="..\..\..\.paket\Paket.Restore.targets" />
+  <Import Project="..\..\.paket\Paket.Restore.targets" />
 </Project>
