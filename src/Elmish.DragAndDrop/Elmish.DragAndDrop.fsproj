@@ -25,8 +25,9 @@
     <Compile Include="Helpers.fs" />
     <Compile Include="RateLimiter.fs" />
     <!-- <Compile Include="DragAndDrop.fs" /> -->
+    <Compile Include="Model.fs" />
     <Compile Include="Types.fs" />
-    <Compile Include="Draggable.fs" />
+    <Compile Include="DragHandle.fs" />
     <Compile Include="DropArea.fs" />
     <Compile Include="Update.fs" />
     <!-- <Compile Include="DragAndDrop2.fs" /> -->

@@ -38,9 +38,9 @@ type Msg =
 | ToSliding
 | SlidingMsg of Pages.Sliding.React.Msg
 
-[<Feliz.ReactComponent>]
-let Root(m : Model) =
-    Pages.Sliding.React.view m (fun _ ->())
+// [<Feliz.ReactComponent>]
+// let Root(m : Model) =
+//     Pages.Sliding.React.view m (fun _ ->())
 
 let view model (dispatch : Msg -> unit) =
     div [] [

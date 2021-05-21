@@ -13,7 +13,7 @@ Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Elmish.DragAndDrop.Tests", 
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "docsTool", "docsTool\docsTool.fsproj", "{8855EC73-F6A1-43D3-AFBC-04A3E09F9BD9}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "App", "Example\Example\src\App.fsproj", "{2BA67FD0-C6A4-475B-88E2-453A1F46A94E}"
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "App", "Example\src\App.fsproj", "{2BA67FD0-C6A4-475B-88E2-453A1F46A94E}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

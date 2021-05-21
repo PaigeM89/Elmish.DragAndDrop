@@ -1,34 +1,28 @@
 namespace Pages
 
 module HandlesDemo =
-  open Feliz
   open Fable.React
   open Fable.React.Props
-  open Browser.Dom
-  open Browser.Types
   open Elmish
-  open Elmish.React
   open Elmish.DragAndDrop
-  // open Elmish.Handles
-
 
   type ContentKey = string
   type ContentValue = { UserInput : string; Name : string}
 
   type Model = {
-    DragAndDrop : DragAndDrop.Types.Model
+    DragAndDrop : DragAndDrop.Model.Model
     ContentMap : Map<ContentKey, ContentValue>
   }
 
   let init() = 
     {
-      DragAndDrop = DragAndDrop.Types.Model.Empty()
+      DragAndDrop = DragAndDrop.Model.Model.Empty()
       ContentMap = Map.empty
     }
 
   type Msg =
   | Init
-  | DndMsg of DragAndDrop.Types.Msg
+  | DndMsg of DragAndDrop.Model.Msg
   | InputChange of elementId : string * newValue : string
 
   let mappedMsg msg = DndMsg msg
@@ -69,7 +63,7 @@ module HandlesDemo =
   let createGenerators dndModel (rootElementId : string) dispatch value =
     let handleStyles = if dndModel.Moving.IsSome then [] else [ Cursor "grab" ]
     let content = [
-      DragHandle.dragHandle dndModel rootElementId (mappedMsg >> dispatch) (
+      DragHandle.Rendered dndModel rootElementId (mappedMsg >> dispatch) (
         ElementGenerator.Create (sprintf "%s-handle" rootElementId) handleStyles [] [h3 [] [ str (value.Name)]]
       )
       input [
@@ -99,7 +93,7 @@ module HandlesDemo =
             |> createGenerators model.DragAndDrop rootElementId dispatch
           rootElementId, content
         )
-        |> DropArea.dropArea model.DragAndDrop (mappedMsg >> dispatch) dragAndDropConfig dropAreaProps
+        |> DropArea.fromGenerators model.DragAndDrop (mappedMsg >> dispatch) dragAndDropConfig dropAreaProps
       )
     div [
       Style [
@@ -120,7 +114,7 @@ module HandlesDemo =
       ]
       let elementIds = content |> List.map (fst)
       let m = content |> Map.ofList
-      let dndModel = DragAndDrop.Types.Model.createWithItems elementIds
+      let dndModel = DragAndDrop.Model.createWithItems elementIds
       { model with DragAndDrop = dndModel; ContentMap = m }, Cmd.none
     | DndMsg msg ->
       let dndModel, cmd = DragAndDrop.Update.update msg model.DragAndDrop

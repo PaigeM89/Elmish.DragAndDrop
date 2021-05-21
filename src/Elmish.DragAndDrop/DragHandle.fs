@@ -1,7 +1,7 @@
 namespace Elmish.DragAndDrop
 
 [<AutoOpen>]
-module Draggable =
+module DragHandle =
   open Types
   open Fable.React
   open Fable.React.Props
@@ -58,15 +58,48 @@ module Draggable =
       else
         Rendering.renderWithHoverListener config model id dispatch gen
 
-  type DragHandle =
+  type DragHandle = {
+    Generator : ElementGenerator
+    // DraggableElementId : ElementId
+  } with
+    static member Rendered mdl draggableElementId dispatch gen =
+      match mdl.Moving with
+      | None ->
+        Rendering.renderHandle mdl draggableElementId dispatch gen
+      | Some _ ->
+        // since a handle only listens for drags, render it as normal (no listeners) if there is a drag.
+        gen.Render()
+    static member Deferred gen =
+      { Generator = gen }
+    member this.Render model id dispatch =
+      match model.Moving with
+      | None ->
+        Rendering.renderHandle model id dispatch this.Generator
+      | Some _ ->
+        this.Generator.Render()
+
+  let internal renderDragHandle dragStatus model config id dispatch (handle : DragHandle) =
+    match dragStatus with
+    | NoActiveDrag ->
+      handle.Render model id dispatch
+    | ActiveDrag draggedElementId ->
+      if id = draggedElementId then
+        div [] [
+          Rendering.renderDragged config model.Cursor id handle.Generator
+          Rendering.renderHoverPreview config id handle.Generator
+        ]
+      else
+        Rendering.renderWithHoverListener config model id dispatch handle.Generator
+
+  /// An element the user can interact with to drag an element. Can reference a parent by Id, or itself (by Id).
+  type DragHandleOld =
     /// Creates a handle that will drag an associated element Id
     /// Note that the elementId set here does not have to be the id of the handle, but can be
     /// a parent element that you want to drag
-    static member dragHandle mdl id dispatch (gen : ElementGenerator) = 
+    static member dragHandle mdl draggableElementId dispatch (gen : ElementGenerator) = 
       match mdl.Moving with
       | None ->
-        Rendering.renderHandle mdl id dispatch gen
+        Rendering.renderHandle mdl draggableElementId dispatch gen
       | Some _ ->
         // since a handle only listens for drags, render it as normal if there is a drag.
         gen.Render()
-

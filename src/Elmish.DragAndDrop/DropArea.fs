@@ -10,7 +10,7 @@ module DropArea =
   open Elmish.DragAndDrop.Helpers.HelperTypes
 
   type DropArea =
-    static member dropArea model dispatch config props content =
+    static member fromGenerators model dispatch config props content =
       match model.Moving with
       | None ->
         let children =
@@ -18,7 +18,6 @@ module DropArea =
           |> List.map (fun (elementId : ElementId, gen : ElementGenerator) -> 
             renderDraggable DragStatus.NoActiveDrag model config elementId dispatch gen
           )
-          //|> List.map (fun (eleDispatch, handle) -> render NoActiveDrag model config eleDispatch handle )
         div props children
       | Some { StartLocation = (listIndex, index, draggedElementId) } ->
         let props = [
@@ -32,3 +31,26 @@ module DropArea =
             renderDraggable (DragStatus.ActiveDrag draggedElementId) model config elementId dispatch gen
           )
         div props children
+
+    static member fromDragHandles model dispatch config props content =
+      match model.Moving with
+      | None ->
+        let children =
+          content
+          |> List.map (fun (elementId : ElementId, handle : DragHandle) -> 
+            renderDragHandle DragStatus.NoActiveDrag model config elementId dispatch handle
+          )
+        div props children
+      | Some { StartLocation = (listIndex, index, draggedElementId) } ->
+        let props = [
+          yield! props
+          Listeners.defaultReleaseListener dispatch
+          Listeners.defaultMouseMoveListener dispatch
+        ]
+        let children =
+          content
+          |> List.map (fun (elementId, handle) ->
+            renderDragHandle (DragStatus.ActiveDrag draggedElementId) model config elementId dispatch handle
+          )
+        div props children
+
