@@ -1,25 +1,39 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0;net5.0</TargetFrameworks>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
   </PropertyGroup>
   <PropertyGroup>
     <Title>Elmish.DragAndDrop</Title>
-    <Description>Elmish.DragAndDrop does the thing!</Description>
-
+    <Description>Provides drag and drop sorting functionality for Fable Elmish applications.</Description>
+    <PackageTags>f#, fsharp, fable, elmish</PackageTags>
+    <PackageProjectUrl>https://github.com/PaigeM89/Elmish.DragAndDrop</PackageProjectUrl>
+    <PackageLicenseUrl>https://github.com/PaigeM89/Elmish.DragAndDrop/blob/main/LICENSE.md</PackageLicenseUrl>
+    <RepositoryUrl>https://github.com/PaigeM89/Elmish.DragAndDrop</RepositoryUrl>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)'=='Release'">
     <Optimize>true</Optimize>
     <Tailcalls>true</Tailcalls>
-    
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="AssemblyInfo.fs" />
-    <Compile Include="DragAndDrop.fs" />
+    <Compile Include="Helpers.fs" />
+    <Compile Include="Model.fs" />
+    <Compile Include="Types.fs" />
+    <Compile Include="DragHandle.fs" />
+    <Compile Include="DropArea.fs" />
+    <Compile Include="Update.fs" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0" PrivateAssets="All" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="*.fsproj; **\*.fs; **\*.fsi" PackagePath="fable\" />
-</ItemGroup>
+  </ItemGroup>
   <Import Project="..\..\.paket\Paket.Restore.targets" />
 </Project>
- 

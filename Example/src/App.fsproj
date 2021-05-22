@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+      <IsPackable>false</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Pages/Sliding.fs" />
+    <!-- <Compile Include="Pages/DragAndDrop2.fs" /> -->
+    <Compile Include="Pages/SingleListDemo.fs" />
+    <!-- <Compile Include="Pages/HorizontalDemo.fs" /> -->
+    <Compile Include="Pages/HandlesDemo.fs" />
+    <Compile Include="Pages/MultiListDemo.fs" />
+    <Compile Include="App.fs" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Fable.Browser.Dom" Version="2.2.0" />
+    <PackageReference Include="Fable.Core" Version="3.2.3" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Elmish.DragAndDrop\Elmish.DragAndDrop.fsproj" />
+  </ItemGroup>
+  <Import Project="..\..\.paket\Paket.Restore.targets" />
+</Project>
