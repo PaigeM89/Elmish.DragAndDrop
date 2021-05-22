@@ -276,3 +276,4 @@ coverage.*.xml
 .fake
 .ionide
 .DS_Store
+docs/*

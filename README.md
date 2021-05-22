@@ -12,6 +12,8 @@ Features in progress/TODO:
 * Allow a callback to be used to filter eligible drop areas or drop locations
 * Fix a bug with multi-list inserting where inserting to the bottom of a list requires inserting into the middle first. This will probably require a ghost last element to hover over, which should disappear. If this approach is used, that element will need to dynamically take up the rest of the space in that list.
 * Fix bug with flickering on large items as they slide back & forth from a spot
+* Use location finding & offset calculations to place a dragged item under the cursor at the spot it was clicked; right now, all dragged items appear in the same spot under the cursor, regardless of where the user clicked on that item.
+* Fix bug where "grabbing" cursor never appears, though "grab" does.
 
 **Contributions Welcome**
 

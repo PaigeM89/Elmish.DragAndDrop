@@ -50,7 +50,7 @@ let update msg model =
     mdl, Cmd.ofMsg (ThrottleMsg throttleMsg)
   | ThrottleMsg (throttleMsg) ->
     printfn "handling throttle message of %A" throttleMsg
-    match ThrottleEvents.handleThrottleMsg2 throttleMsg model.ThrottlerState with
+    match ThrottleEvents.handleThrottleMsg throttleMsg model.ThrottlerState with
     | Ok (ts, cmd) ->
       { model with ThrottlerState = ts }, Cmd.map ThrottleMsg cmd
     | Error e ->

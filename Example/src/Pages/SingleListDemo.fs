@@ -7,19 +7,14 @@ namespace Pages
 *)
 
 module SingleListDemo =
-  open Feliz
   open Fable.React
   open Fable.React.Props
-  open Browser.Dom
-  open Browser.Types
   open Elmish
-  open Elmish.React
   open Elmish.DragAndDrop
 
   type Model = {
     /// Stores information for the Drag & Drop internal state
     DragAndDrop : DragAndDrop.Model.Model
-    // Content : (string * ReactElement) list
     /// Lookup when rendering content; order is fed from the Drag & Drop model
     ContentMap : Map<string, ReactElement>
   }
@@ -39,10 +34,9 @@ module SingleListDemo =
     |> List.mapi (fun i c -> (sprintf "content-%i" i), c)
     |> Map.ofList
 
-  let init() = 
+  let init() =
     {
       DragAndDrop = DragAndDrop.Model.Model.Empty()
-      // Content = []
       ContentMap = initContentMap()
     }
 
@@ -55,6 +49,7 @@ module SingleListDemo =
   let dragAndDropConfig = {
     DragAndDropConfig.Empty() with
       DraggedElementStyles = Some [
+          // manually shift the item to fit under the cursor in an intuitive way
           MarginLeft -130.
           MarginTop -50.
           Opacity 0.8
@@ -73,15 +68,16 @@ module SingleListDemo =
       Map.tryFind elementId model.ContentMap
       |> Option.defaultValue (div [] [])
     ElementGenerator.Create elementId [ Cursor "grab" ] [ ClassName "content" ] [element]
+    // A DragHandle can either be rendered "early" as part of an element (see the Handles example)
+    // or can be Deferred to render later if it's the root element by which the DropArea will render content
     |> DragHandle.Deferred
 
   let view model (dispatch : Msg -> unit) =
     let dispatch = (mappedMsg >> dispatch)
-    let dropAreaProps =
-      [
-        (ClassName "container") :> IHTMLProp
-      ]
+    let dropAreaProps = [ (ClassName "container") :> IHTMLProp ]
     let dropAreaContent =
+      // note that element Ids are always a list of lists, to accomodate multiple categories.
+      // see the Multi List Demo for an example of that.
       model.DragAndDrop.ElementIds()
       |> List.map(fun li ->
         li
@@ -96,10 +92,8 @@ module SingleListDemo =
   let update msg model =
     match msg with
     | Init ->
-      printfn "in init"
       let content = model.ContentMap |> Map.toList
       let ids = content |> List.map fst
-      let m = Map.ofList content
       let dndModel = DragAndDrop.Model.createWithItems ids
       { model with DragAndDrop = dndModel }, Cmd.none
     | DndMsg msg ->

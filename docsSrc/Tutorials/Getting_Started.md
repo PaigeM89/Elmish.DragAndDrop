@@ -1,15 +1,15 @@
 # Getting Started
 
 ```fsharp
-open Elmish.DragAndDrop
-let foo = ()
-let myAge = 21
-let color = Say.FavoriteColor.Red
+let x = 1
+let y = x + 1
 ```
+
+This is some other text.
 
 ## Here is the path to downloading
 
     [lang=bash]
     paket install Elmish.DragAndDrop
 
-
+This is some text.
