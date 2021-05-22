@@ -9,10 +9,8 @@ module CollectionDragAndDrop2 =
   open Elmish
   open Elmish.React
   
-  /// todo:
-  ///   category blocking
-  ///   removal when dropping off target
-  ///   make input fields usable lol
+  /// this page is only here because sliding sort of works
+  /// ignore it for anything other than figuring out how to implement slide
 
   type ElementId = string
 
