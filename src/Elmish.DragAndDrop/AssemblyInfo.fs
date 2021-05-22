@@ -4,20 +4,20 @@ open System.Reflection
 
 [<assembly: AssemblyTitleAttribute("Elmish.DragAndDrop")>]
 [<assembly: AssemblyProductAttribute("Elmish.DragAndDrop")>]
-[<assembly: AssemblyVersionAttribute("0.1.0")>]
-[<assembly: AssemblyMetadataAttribute("ReleaseDate","2021-02-28T00:00:00.0000000-05:00")>]
-[<assembly: AssemblyFileVersionAttribute("0.1.0")>]
-[<assembly: AssemblyInformationalVersionAttribute("0.1.0")>]
-[<assembly: AssemblyMetadataAttribute("ReleaseChannel","release")>]
-[<assembly: AssemblyMetadataAttribute("GitHash","9e2f72b80a85b4fdcb32fd69f961b90b099836cb")>]
+[<assembly: AssemblyVersionAttribute("0.2.0")>]
+[<assembly: AssemblyMetadataAttribute("ReleaseDate","2021-05-22T00:00:00.0000000-04:00")>]
+[<assembly: AssemblyFileVersionAttribute("0.2.0")>]
+[<assembly: AssemblyInformationalVersionAttribute("0.2.0")>]
+[<assembly: AssemblyMetadataAttribute("ReleaseChannel","rc")>]
+[<assembly: AssemblyMetadataAttribute("GitHash","58fbbfb9c7acd42966ed7d7538cc7161c3c44179")>]
 do ()
 
 module internal AssemblyVersionInformation =
     let [<Literal>] AssemblyTitle = "Elmish.DragAndDrop"
     let [<Literal>] AssemblyProduct = "Elmish.DragAndDrop"
-    let [<Literal>] AssemblyVersion = "0.1.0"
-    let [<Literal>] AssemblyMetadata_ReleaseDate = "2021-02-28T00:00:00.0000000-05:00"
-    let [<Literal>] AssemblyFileVersion = "0.1.0"
-    let [<Literal>] AssemblyInformationalVersion = "0.1.0"
-    let [<Literal>] AssemblyMetadata_ReleaseChannel = "release"
-    let [<Literal>] AssemblyMetadata_GitHash = "9e2f72b80a85b4fdcb32fd69f961b90b099836cb"
+    let [<Literal>] AssemblyVersion = "0.2.0"
+    let [<Literal>] AssemblyMetadata_ReleaseDate = "2021-05-22T00:00:00.0000000-04:00"
+    let [<Literal>] AssemblyFileVersion = "0.2.0"
+    let [<Literal>] AssemblyInformationalVersion = "0.2.0"
+    let [<Literal>] AssemblyMetadata_ReleaseChannel = "rc"
+    let [<Literal>] AssemblyMetadata_GitHash = "58fbbfb9c7acd42966ed7d7538cc7161c3c44179"
