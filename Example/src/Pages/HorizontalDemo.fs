@@ -1,13 +1,9 @@
 namespace Pages
 
 module HorizontalDemo =
-  open Feliz
   open Fable.React
   open Fable.React.Props
-  open Browser.Dom
-  open Browser.Types
   open Elmish
-  open Elmish.React
   open Elmish.DragAndDrop3
 
   type Model = {
