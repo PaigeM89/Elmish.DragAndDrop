@@ -1,6 +1,6 @@
 namespace Elmish.DragAndDrop.Helpers
 
-module internal List =
+module List =
   open System
 
   let private len x = List.length x
