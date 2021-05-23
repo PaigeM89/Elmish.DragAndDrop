@@ -67,9 +67,12 @@ module HandlesDemo =
         ElementGenerator.Create (sprintf "%s-handle" rootElementId) handleStyles [] [h3 [] [ str (value.Name)]]
       )
       input [
+        // if this isn't set, sometimes the browser will render text on an input with a value of ""
+        // i'm not sure if this is a browser bug, a framework bug, a fable bug, a JS bug, or a bug in this demo.
+        Value value.UserInput
         DefaultValue value.UserInput
         OnChange (fun ev ->
-          let v = ev.Value 
+          let v = ev.Value
           // we track the current state of user input by the root draggable's ID, not the input id (which we dont set)
           InputChange (rootElementId, v) |> (dispatch))
       ]

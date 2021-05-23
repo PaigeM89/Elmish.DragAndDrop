@@ -98,6 +98,7 @@ module Types =
     /// The Id of the element to generate. This will be automatically added to the Props when
     /// the ReactElement is generated.
     Id : ElementId
+    Tag : IHTMLProp seq -> ReactElement seq -> ReactElement
     /// The default CSS Styles of the element to generate
     Styles : CSSProp list
     /// The default HTML Properties of the element to generate
@@ -106,25 +107,28 @@ module Types =
     Content : ReactElement list
   } with
     static member Create id styles props content : ElementGenerator =
-      { Id = id; Styles = styles; Props = props; Content = content }
+      { Id = id; Tag = div; Styles = styles; Props = props; Content = content }
     static member FromSingleElement id styles props content = 
       ElementGenerator.Create id styles props [content]
     member this.AddStyles newStyles = { this with Styles = this.Styles @ newStyles }
     member this.AddProps newProps = { this with Props = this.Props @ newProps }
     member this.AddContent newContent = { this with Content = this.Content @ newContent }
+    member this.SetTag tag = { this with Tag = tag }
     /// Turns this Generator into a `ReactElement`. The Id Property of this record is turned into
     /// an HTML Property and added to the properties.
     member this.Render() =
       let styleProp = Style this.Styles :> IHTMLProp
       let idProp = (Id this.Id) :> IHTMLProp
-      div (this.Props @ [idProp; styleProp]) this.Content
+      let props = this.Props @ [idProp; styleProp] |> Seq.ofList
+      this.Tag props (Seq.ofList this.Content)
 
   module ElementGenerator = 
     let createGenerator id styles props content : ElementGenerator =
-      { Id = id; Styles = styles; Props = props; Content = content }
+      { Id = id; Tag = div; Styles = styles; Props = props; Content = content }
     let addStyles newStyles (gen : ElementGenerator) = gen.AddStyles newStyles
     let addProps newProps (gen : ElementGenerator) = gen.AddProps newProps
     let addContent newContent (gen : ElementGenerator) = gen.AddContent newContent
+    let setTag tag (gen : ElementGenerator) = gen.SetTag tag
     let render (gen : ElementGenerator) = gen.Render()
     let renderWith styles props gen =
       gen
