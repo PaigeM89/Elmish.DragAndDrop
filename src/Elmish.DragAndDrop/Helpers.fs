@@ -16,6 +16,8 @@ module List =
   let removeAt index li =
     if len li < index then
       li
+    elif len li = 0 then
+      li
     elif index = 0 then
       List.tail li
     else
@@ -23,7 +25,7 @@ module List =
       let t = List.skip (index + 1) li
       h @ t
 
-  let insertAt item index li =
+  let insertAt (item: 'a) index li =
     if len li <= index then
       li @ [item]
     elif index <= 0 then

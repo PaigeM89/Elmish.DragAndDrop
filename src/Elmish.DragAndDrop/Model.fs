@@ -8,7 +8,7 @@ module Model =
   type Model = {
     /// The cursor's current coordinates, updated when dragging to draw the ghost.
     Cursor : Coords
-    /// The index of the currently moving item (or, rather, the point it is hovering over), and that element's id
+    /// The index of the currently moving item (or, rather, the point it is hovering over), and that element's id.
     /// The slide contains the starting coordinates & element that is sliding.
     Moving : MovingStatus option
     /// A lookup to know exactly where each element is located
@@ -68,7 +68,7 @@ module Model =
     let itemsWithLocs = initItemLocations [items]
     { Model.Empty() with Items = itemsWithLocs } |> buildItemDict
 
-  let updateItemLocations (items : ItemLocation list list) =
+  let getUpdatedItemLocations (items : ItemLocation list list) =
     items
     |> List.mapi (fun i itemList ->
       itemList
@@ -76,6 +76,45 @@ module Model =
         (i, j, id)
       )
     )
+
+  let insertNewItemAt listIndex itemIndex (itemId : string) model =
+    let loc = (listIndex, itemIndex, itemId)
+    let lio = List.tryItem listIndex model.Items
+    match lio with
+    | Some li ->
+      let li = List.insertAt loc itemIndex li
+      let lis = List.replaceAt li listIndex model.Items
+      let allItemLocs = getUpdatedItemLocations lis
+      { model with Items = allItemLocs }
+    | None ->
+      let newListIndex = model.Items.Length
+      let li = [(newListIndex, 0, itemId)]
+      let lis = model.Items @ [li]
+      let allItemLocs = getUpdatedItemLocations lis
+      { model with Items = allItemLocs }
+  let insertNewItemAtHead listIndex item model = insertNewItemAt listIndex 0 item model
+  let removeItemAt listIndex itemIndex model = 
+    match List.tryItem listIndex model.Items with
+    | Some li ->
+      let li = List.removeAt itemIndex li
+      let lis = List.replaceAt li listIndex model.Items
+      let allItemLocs = getUpdatedItemLocations lis
+      { model with Items = allItemLocs }
+    | None -> model
+  let removeItem itemId model =
+    let picked = 
+      model.Items
+      |> List.concat
+      |> List.tryFind(fun (_, _, item) -> item = itemId)
+    match picked with
+    | Some (listIndex, index, _) ->
+      removeItemAt listIndex index model
+    | None -> model
+
+  let replaceItemAt listIndex itemIndex newItem model =
+    insertNewItemAt listIndex itemIndex newItem model
+    |> removeItemAt listIndex (itemIndex + 1)
+  
 
   let setDragSource loc model =
     match model.Moving with
