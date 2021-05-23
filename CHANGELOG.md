@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.3.0-alpha01] - 2021-05-23
 
 ### Added
 - New `DragDropContext` to capture events in a wider area than a `droparea`. This lets the user drag things around in an inuitive way without changing where things can be dropped.
@@ -82,7 +82,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Drag and Drop with Rotate.
 - Horizontal, Vertical, and Free ghost item movement.
 
-[Unreleased]: https://github.com/MyGithubUsername/Elmish.DragAndDrop/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/MyGithubUsername/Elmish.DragAndDrop/compare/v0.3.0-alpha01...HEAD
+[0.3.0-alpha01]: https://github.com/MyGithubUsername/Elmish.DragAndDrop/compare/v0.2.0...v0.3.0-alpha01
 [0.2.0]: https://github.com/MyGithubUsername/Elmish.DragAndDrop/compare/v0.1.0...v0.2.0
 [0.2.0-rc3]: https://github.com/MyGithubUsername/Elmish.DragAndDrop/compare/v0.1.0...v0.2.0-rc3
 [0.2.0-rc2]: https://github.com/MyGithubUsername/Elmish.DragAndDrop/compare/v0.1.0...v0.2.0-rc2
