@@ -117,8 +117,8 @@ module HandlesDemo =
       let dndModel = DragAndDrop.Model.createWithItems elementIds
       { model with DragAndDrop = dndModel; ContentMap = m }, Cmd.none
     | DndMsg msg ->
-      let dndModel, cmd = DragAndDrop.Update.update msg model.DragAndDrop
-      { model with DragAndDrop = dndModel }, Cmd.map DndMsg cmd
+      let dndModel = DragAndDrop.Update.update msg model.DragAndDrop
+      { model with DragAndDrop = dndModel }, Cmd.none
     | InputChange (elementId, newValue) ->
       match Map.tryFind elementId model.ContentMap with
       | Some oldContent ->

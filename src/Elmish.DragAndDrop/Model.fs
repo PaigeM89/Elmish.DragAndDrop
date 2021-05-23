@@ -8,11 +8,9 @@ module Model =
   type Model = {
     /// The cursor's current coordinates, updated when dragging to draw the ghost.
     Cursor : Coords
-    /// The index of the currently moving item (or, rather, the point it is hovering over), and that element's id
+    /// The index of the currently moving item (or, rather, the point it is hovering over), and that element's id.
     /// The slide contains the starting coordinates & element that is sliding.
     Moving : MovingStatus option
-    /// A lookup to know exactly where each element is located
-    LocationDict : Map<ElementId, ItemLocation>
     /// The amount to adjust the drag ghost so that it is correctly placed under the cursor.
     Offset : Coords option
     /// The items to be sorted. If there are multiple containers, use multiple lists.
@@ -29,7 +27,6 @@ module Model =
     static member Empty() = {
       Cursor = { x = 0.; y = 0. }
       Moving = None
-      LocationDict = Map.empty
       Offset = None
       Items = []
     }
@@ -43,32 +40,18 @@ module Model =
       )
     )
 
-  let buildItemDict (model : Model) =
-    let d = 
-      model.Items
-      |> List.map(fun li ->
-        li 
-        |> List.map (fun (listInd, ind, id) ->
-          id, (listInd, ind, id)
-        )
-      )
-      |> List.concat
-      |> Map.ofList
-    { model with LocationDict = d }
-
-  let getItemLocation id model = Map.tryFind id model.LocationDict
-
   /// Creates a new Model initialied with items in multiple lists
   let createWithItemsMultiList (items : ElementId list list) =
     let itemsWithLocs = initItemLocations items
-    { Model.Empty() with Items = itemsWithLocs } |> buildItemDict
+    { Model.Empty() with Items = itemsWithLocs }
 
   /// Creates a new Model initialized with items in a single list
   let createWithItems (items : ElementId list) =
     let itemsWithLocs = initItemLocations [items]
-    { Model.Empty() with Items = itemsWithLocs } |> buildItemDict
+    { Model.Empty() with Items = itemsWithLocs }
 
-  let updateItemLocations (items : ItemLocation list list) =
+  /// Returns a list of updated Item Locations from the given list
+  let internal getUpdatedItemLocations (items : ItemLocation list list) =
     items
     |> List.mapi (fun i itemList ->
       itemList
@@ -76,6 +59,53 @@ module Model =
         (i, j, id)
       )
     )
+
+  /// Inserts a new item at the specified indexes. If a list does not exist at the list index, 
+  /// a new list will be created at the last index.
+  let insertNewItemAt listIndex itemIndex (itemId : string) model =
+    let loc = (listIndex, itemIndex, itemId)
+    let lio = List.tryItem listIndex model.Items
+    match lio with
+    | Some li ->
+      let li = List.insertAt loc itemIndex li
+      let lis = List.replaceAt li listIndex model.Items
+      let allItemLocs = getUpdatedItemLocations lis
+      { model with Items = allItemLocs }
+    | None ->
+      let newListIndex = model.Items.Length
+      let li = [(newListIndex, 0, itemId)]
+      let lis = model.Items @ [li]
+      let allItemLocs = getUpdatedItemLocations lis
+      { model with Items = allItemLocs }
+  /// Inserts a new item at the head of the given list index. If there is no list at that list index,
+  /// a new list will be created at the last list index, with this item as the only item.
+  let insertNewItemAtHead listIndex item model = insertNewItemAt listIndex 0 item model
+  /// Removes the item at the given list index, item index. If either index is out of range, nothing happens.
+  let removeItemAt listIndex itemIndex model =
+    match List.tryItem listIndex model.Items with
+    | Some li ->
+      let li = List.removeAt itemIndex li
+      let lis = List.replaceAt li listIndex model.Items
+      let allItemLocs = getUpdatedItemLocations lis
+      { model with Items = allItemLocs }
+    | None -> model
+  /// Removes the item by id. If the id is not found, nothing happens.
+  let removeItem itemId model =
+    let picked = 
+      model.Items
+      |> List.concat
+      |> List.tryFind(fun (_, _, item) -> item = itemId)
+    match picked with
+    | Some (listIndex, index, _) ->
+      removeItemAt listIndex index model
+    | None -> model
+
+  /// Replaces the item at the given list index, item index. If the previous item is not found, the item is simply inserted.
+  /// If the list does not exist at the given list index, a new list is created with this item as the only item.
+  let replaceItemAt listIndex itemIndex newItem model =
+    insertNewItemAt listIndex itemIndex newItem model
+    |> removeItemAt listIndex (itemIndex + 1)
+  
 
   let setDragSource loc model =
     match model.Moving with

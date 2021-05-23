@@ -97,5 +97,5 @@ module SingleListDemo =
       let dndModel = DragAndDrop.Model.createWithItems ids
       { model with DragAndDrop = dndModel }, Cmd.none
     | DndMsg msg ->
-      let dndModel, cmd = DragAndDrop.Update.update msg model.DragAndDrop
-      { model with DragAndDrop = dndModel }, Cmd.map DndMsg cmd
+      let dndModel = DragAndDrop.Update.update msg model.DragAndDrop
+      { model with DragAndDrop = dndModel }, Cmd.none

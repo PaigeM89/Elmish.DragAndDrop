@@ -67,26 +67,24 @@ module Update =
     match msg with
     | DragStart (loc, startCoords, offset) ->
       let movingStatus = MovingStatus.Init (loc) |> Some
-      { model with Moving = movingStatus; Cursor = startCoords; Offset = Some offset }, Cmd.none
+      { model with Moving = movingStatus; Cursor = startCoords; Offset = Some offset }
     | OnDrag coords ->
-      {model with Cursor = coords }, Cmd.none
+      {model with Cursor = coords }
     | DragOver (listIndex, index, elementId) ->
       match model.Moving with
       | Some { StartLocation = (startList, startIndex, startingElementId) }->
         let slide = None //tryGetSlide elementId
         let items' =
           ItemMoving.moveItem (startList, startIndex) (listIndex, index) model.Items
-          |> Model.updateItemLocations
-        let mdl = { model with Items = items' } |> Model.buildItemDict // |> Model.setSlideOpt slide
-        let newStartLoc = Model.getItemLocation startingElementId mdl
-        match newStartLoc with
-        | None ->
-          mdl, Cmd.none
-        | Some loc ->
-          let mdl = Model.setDragSource loc mdl
-          mdl, Cmd.none
+          |> Model.getUpdatedItemLocations
+        let mdl = { model with Items = items' } // |> Model.setSlideOpt slide
+        let newStartLoc = (listIndex, index, startingElementId)
+        (Model.setDragSource newStartLoc mdl)
       | None ->
-        model, Cmd.none
+        model
     | DragEnd ->
-      { model with Moving = None; Offset = None }, Cmd.none
+      { model with Moving = None; Offset = None }
 
+  let updateWithCmd msg model =
+    let mdl = update msg model
+    mdl, Cmd.none
