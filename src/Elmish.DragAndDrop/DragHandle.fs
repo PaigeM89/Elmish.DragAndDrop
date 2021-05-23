@@ -51,12 +51,27 @@ module DragHandle =
       gen.Render()
     | ActiveDrag draggedElementId ->
       if id = draggedElementId then
-        div [] [
+        gen.Tag (Seq.empty) (Seq.ofList [
+          Rendering.renderDragged config model.Cursor id gen
+          Rendering.renderHoverPreview config id gen
+        ])
+      else
+        Rendering.renderWithHoverListener config model id dispatch gen
+
+  let internal toDraggables dragStatus model config id dispatch (gen : ElementGenerator) =
+    match dragStatus with
+    | NoActiveDrag ->
+      //render item as a draggable
+      //a Generator should already have a handle defined in it (or is a handle itself).
+      [gen.Render()]
+    | ActiveDrag draggedElementId ->
+      if id = draggedElementId then
+        [
           Rendering.renderDragged config model.Cursor id gen
           Rendering.renderHoverPreview config id gen
         ]
       else
-        Rendering.renderWithHoverListener config model id dispatch gen
+        [Rendering.renderWithHoverListener config model id dispatch gen]
 
   type DragHandle = {
     Generator : ElementGenerator

@@ -9,7 +9,9 @@ type Page =
 | SingleListDemo of model : Pages.SingleListDemo.Model
 | MultiListDemo of model : Pages.MultiListDemo.Model
 | HandlesDemo of model : Pages.HandlesDemo.Model
+| TableDemo of model : Pages.TableDemo.Model
 // | HorizontalDemo of model : Pages.HorizontalDemo.Model
+
 
 type Model = {
     Page : Page
@@ -24,9 +26,11 @@ type Msg =
 | MultiListDemoMsg of Pages.MultiListDemo.Msg
 // | HorizontalDemoMsg of Pages.HorizontalDemo.Msg
 | HandlesDemoMsg of Pages.HandlesDemo.Msg
+| TableDemoMsg of Pages.TableDemo.Msg
 | ToSingleListDemo
 | ToMultiListDemo
 | ToHandlesDemo
+| ToTableDemo
 // | ToHorizontalDemo
 
 let view model (dispatch : Msg -> unit) =
@@ -36,12 +40,14 @@ let view model (dispatch : Msg -> unit) =
             yield button [ OnClick (fun _ ->  ToSingleListDemo |> dispatch)] [ str "Single List Demo" ]
             yield button [ OnClick (fun _ ->  ToMultiListDemo |> dispatch)] [ str "Multi List Demo" ]
             yield button [ OnClick (fun _ ->  ToHandlesDemo |> dispatch)] [ str "Handles Demo" ]
+            yield button [ OnClick (fun _ -> ToTableDemo |> dispatch)] [ str "Table Demo" ]
             // yield button [ OnClick (fun _ ->  ToHorizontalDemo |> dispatch)] [ str "Horizontal Demo"]
         ]
         match model.Page with
         | SingleListDemo dnd -> yield Pages.SingleListDemo.view dnd (fun x -> x |> SingleListDemoMsg |> dispatch )
         | MultiListDemo dnd -> yield Pages.MultiListDemo.view dnd (fun x -> x |> MultiListDemoMsg |> dispatch )
         | HandlesDemo dnd -> yield Pages.HandlesDemo.view dnd (fun x -> x |> HandlesDemoMsg |> dispatch )
+        | TableDemo dnd -> yield Pages.TableDemo.View.view dnd (fun x -> x |> TableDemoMsg |> dispatch )
         // | HorizontalDemo dnd -> yield Pages.HorizontalDemo.view dnd (fun x -> x |> HorizontalDemoMsg |> dispatch )
     ]
 
@@ -66,6 +72,12 @@ let update msg model =
     | HandlesDemoMsg msg, HandlesDemo mdl ->
         let mdl, cmd = Pages.HandlesDemo.update msg mdl
         { Page = HandlesDemo mdl}, Cmd.map (HandlesDemoMsg) cmd
+    | ToTableDemo, _ ->
+      let mdl = Pages.TableDemo.init()
+      { Page = TableDemo mdl}, Cmd.ofMsg (TableDemoMsg Pages.TableDemo.Init)
+    | TableDemoMsg msg, TableDemo mdl ->
+      let mdl, cmd = Pages.TableDemo.update msg mdl
+      { Page = TableDemo mdl}, Cmd.map (TableDemoMsg) cmd
     // | ToHorizontalDemo, _ ->
     //     let mdl = Pages.HorizontalDemo.init()
     //     { Page = HorizontalDemo mdl}, Cmd.ofMsg (HorizontalDemoMsg Pages.HorizontalDemo.Init)

@@ -25,7 +25,7 @@ module List =
       let t = List.skip (index + 1) li
       h @ t
 
-  let insertAt (item: 'a) index li =
+  let insertAt item index li =
     if len li <= index then
       li @ [item]
     elif index <= 0 then
