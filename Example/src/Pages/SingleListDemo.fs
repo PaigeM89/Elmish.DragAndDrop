@@ -14,7 +14,7 @@ module SingleListDemo =
 
   type Model = {
     /// Stores information for the Drag & Drop internal state
-    DragAndDrop : DragAndDrop.Model.Model
+    DragAndDrop : DragAndDropModel
     /// Lookup when rendering content; order is fed from the Drag & Drop model
     ContentMap : Map<string, ReactElement>
   }
@@ -36,13 +36,13 @@ module SingleListDemo =
 
   let init() =
     {
-      DragAndDrop = DragAndDrop.Model.Model.Empty()
+      DragAndDrop = DragAndDropModel.Empty()
       ContentMap = initContentMap()
     }
 
   type Msg =
   | Init
-  | DndMsg of DragAndDrop.Model.Msg
+  | DndMsg of DragAndDropMsg
 
   let mappedMsg msg = DndMsg msg
 
@@ -94,8 +94,8 @@ module SingleListDemo =
     | Init ->
       let content = model.ContentMap |> Map.toList
       let ids = content |> List.map fst
-      let dndModel = DragAndDrop.Model.createWithItems ids
+      let dndModel = DragAndDropModel.createWithItems ids
       { model with DragAndDrop = dndModel }, Cmd.none
     | DndMsg msg ->
-      let dndModel = DragAndDrop.Update.update msg model.DragAndDrop
+      let dndModel = dragAndDropUpdate msg model.DragAndDrop
       { model with DragAndDrop = dndModel }, Cmd.none

@@ -90,7 +90,6 @@ module HorizontalDemo =
   let update msg model =
     match msg with
     | Init ->
-      printfn "in init"
       let content =
         [
           [ h3 [] [str "Content 0"]; p [] [ str "This is some content" ] ]
