@@ -5,8 +5,8 @@ module DragHandle =
   open Types
   open Fable.React
   open Fable.React.Props
-  open Elmish.DragAndDrop.Helpers
-  open Elmish.DragAndDrop.Helpers.HelperTypes
+  open Elmish.DragAndDropHelpers
+  open Elmish.DragAndDropHelpers.HelperTypes
 
   module internal Rendering =
     let private orEmpty li = Option.defaultValue [] li

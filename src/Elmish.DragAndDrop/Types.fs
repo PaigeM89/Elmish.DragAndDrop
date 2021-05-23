@@ -5,8 +5,8 @@ module Types =
   open Elmish
   open Fable.React
   open Fable.React.Props
-  open Elmish.DragAndDrop.Helpers
-  open Elmish.DragAndDrop.Helpers.HelperTypes
+  open Elmish.DragAndDropHelpers
+  open Elmish.DragAndDropHelpers.HelperTypes
   open Model
 
 
@@ -18,7 +18,7 @@ module Types =
 
   module internal Listeners =
     open Browser.Types
-    open Elmish.DragAndDrop.Helpers.BrowserHelpers
+    open Elmish.DragAndDropHelpers.BrowserHelpers
     open Fable.Core
 
     let defaultDraggable model elementId dispatch =

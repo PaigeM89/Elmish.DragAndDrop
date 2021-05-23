@@ -22,25 +22,25 @@ module TableDemo =
     }
 
   type Model = {
-    DragAndDrop : DragAndDrop.Model.Model
+    DragAndDrop : DragAndDropModel
     ContentMap : Map<string, ContentValue>
   }
 
   let init() = {
-    DragAndDrop = DragAndDrop.Model.Model.Empty()
+    DragAndDrop = DragAndDropModel.Empty()
     ContentMap = Map.empty
   }
 
   type Msg =
   | Init
-  | DndMsg of DragAndDrop.Model.Msg
+  | DndMsg of DragAndDropMsg
   | AddRow
   | DeleteRow of rowId : Guid
 
   let dndMsg msg = DndMsg msg
 
   let dragAndDropConfig = {
-    DragAndDrop.Types.DragAndDropConfig.Empty() with
+    DragAndDropConfig.Empty() with
       DraggedElementStyles = Some [
           MarginLeft -130.
           MarginTop -50.
@@ -134,7 +134,7 @@ module TableDemo =
         ] [
           tableHeaders
           
-          Elmish.DragAndDrop.DropArea.DropArea.fromGeneratorsWithTag
+          DropArea.fromGeneratorsWithTag
             model.DragAndDrop
             (DndMsg >> dispatch)
             dragAndDropConfig
@@ -154,7 +154,7 @@ module TableDemo =
   
   let addContent model cv =
     let dict = model.ContentMap |> Map.add (string cv.ContentId) cv
-    let dnd = Model.insertNewItemAtHead 0 (string cv.ContentId) model.DragAndDrop
+    let dnd = DragAndDropModel.insertNewItemAtHead 0 (string cv.ContentId) model.DragAndDrop
     { model with ContentMap = dict; DragAndDrop = dnd }
 
   let update msg model =
@@ -162,7 +162,7 @@ module TableDemo =
     | Init ->
       model, Cmd.none
     | DndMsg msg ->
-      let dndModel = Update.update msg model.DragAndDrop
+      let dndModel = dragAndDropUpdate msg model.DragAndDrop
       { model with DragAndDrop = dndModel }, Cmd.none
     | AddRow ->
       let row = ContentValue.Empty()

@@ -4,8 +4,8 @@ namespace Elmish.DragAndDrop
 module Update =
   open Elmish
   open Elmish.DragAndDrop.Types
-  open Elmish.DragAndDrop.Helpers
-  open Elmish.DragAndDrop.Helpers.HelperTypes
+  open Elmish.DragAndDropHelpers
+  open Elmish.DragAndDropHelpers.HelperTypes
 
   module internal ItemMoving =
     open Fable.Core

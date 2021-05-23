@@ -10,25 +10,25 @@ module HandlesDemo =
   type ContentValue = { UserInput : string; Name : string}
 
   type Model = {
-    DragAndDrop : DragAndDrop.Model.Model
+    DragAndDrop : DragAndDropModel
     ContentMap : Map<ContentKey, ContentValue>
   }
 
   let init() = 
     {
-      DragAndDrop = DragAndDrop.Model.Model.Empty()
+      DragAndDrop = DragAndDropModel.Empty()
       ContentMap = Map.empty
     }
 
   type Msg =
   | Init
-  | DndMsg of DragAndDrop.Model.Msg
+  | DndMsg of DragAndDropMsg
   | InputChange of elementId : string * newValue : string
 
   let mappedMsg msg = DndMsg msg
 
   let dragAndDropConfig = {
-    DragAndDrop.Types.DragAndDropConfig.Empty() with
+    DragAndDropConfig.Empty() with
       DraggedElementStyles = Some [
           MarginLeft -130.
           MarginTop -50.
@@ -67,10 +67,7 @@ module HandlesDemo =
         ElementGenerator.Create (sprintf "%s-handle" rootElementId) handleStyles [] [h3 [] [ str (value.Name)]]
       )
       input [
-        // if this isn't set, sometimes the browser will render text on an input with a value of ""
-        // i'm not sure if this is a browser bug, a framework bug, a fable bug, a JS bug, or a bug in this demo.
         Value value.UserInput
-        DefaultValue value.UserInput
         OnChange (fun ev ->
           let v = ev.Value
           // we track the current state of user input by the root draggable's ID, not the input id (which we dont set)
@@ -110,17 +107,16 @@ module HandlesDemo =
   let update msg model =
     match msg with
     | Init ->
-      printfn "in init"
       let content = [
         for i in 1..7 do 
           yield (sprintf "input-%i" i |> generateRootId), { UserInput = ""; Name = sprintf "Input %i" i }
       ]
       let elementIds = content |> List.map (fst)
       let m = content |> Map.ofList
-      let dndModel = DragAndDrop.Model.createWithItems elementIds
+      let dndModel = DragAndDropModel.createWithItems elementIds
       { model with DragAndDrop = dndModel; ContentMap = m }, Cmd.none
     | DndMsg msg ->
-      let dndModel = DragAndDrop.Update.update msg model.DragAndDrop
+      let dndModel = dragAndDropUpdate msg model.DragAndDrop
       { model with DragAndDrop = dndModel }, Cmd.none
     | InputChange (elementId, newValue) ->
       match Map.tryFind elementId model.ContentMap with

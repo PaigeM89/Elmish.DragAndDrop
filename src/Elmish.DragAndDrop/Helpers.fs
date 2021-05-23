@@ -1,4 +1,4 @@
-namespace Elmish.DragAndDrop.Helpers
+namespace Elmish.DragAndDropHelpers
 
 module List =
   open System

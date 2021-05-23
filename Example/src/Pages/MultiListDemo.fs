@@ -12,7 +12,7 @@ module MultiListDemo =
   open Elmish.DragAndDrop
 
   type Model = {
-    DragAndDrop : DragAndDrop.Model.Model
+    DragAndDrop : DragAndDropModel
     ContentMap : Map<string, ReactElement>
   }
 
@@ -32,20 +32,20 @@ module MultiListDemo =
       |> List.mapi (fun i c -> (sprintf "content-%i" i), c)
     let m = Map.ofList allContent
     let list1, list2 = allContent |> List.map fst |> List.splitAt 5 
-    let dndModel = DragAndDrop.Model.createWithItemsMultiList [list1;list2]
+    let dndModel = DragAndDropModel.createWithItemsMultiList [list1;list2]
     { model with ContentMap = m; DragAndDrop = dndModel }
 
 
 
   let init() = 
     {
-      DragAndDrop = DragAndDrop.Model.Model.Empty()
+      DragAndDrop = DragAndDropModel.Empty()
       ContentMap = Map.empty
     } |> initContent
 
   type Msg =
   | Init
-  | DndMsg of DragAndDrop.Model.Msg
+  | DndMsg of DragAndDropMsg
 
   let mappedMsg msg = DndMsg msg
 
@@ -92,5 +92,5 @@ module MultiListDemo =
     | Init ->
       model, Cmd.none
     | DndMsg msg ->
-      let dndModel = DragAndDrop.Update.update msg model.DragAndDrop
+      let dndModel = dragAndDropUpdate msg model.DragAndDrop
       { model with DragAndDrop = dndModel }, Cmd.none

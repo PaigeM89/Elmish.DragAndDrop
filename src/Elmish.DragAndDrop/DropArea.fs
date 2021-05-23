@@ -6,8 +6,8 @@ module DropArea =
   open Fable.React
   open Fable.React.Props
   open Elmish.DragAndDrop.Types
-  open Elmish.DragAndDrop.Helpers
-  open Elmish.DragAndDrop.Helpers.HelperTypes
+  open Elmish.DragAndDropHelpers
+  open Elmish.DragAndDropHelpers.HelperTypes
 
   type DropArea =
     static member fromGenerators model dispatch config props content =

@@ -2,8 +2,8 @@ namespace Elmish.DragAndDrop
 
 [<AutoOpen>]
 module Model =
-  open Elmish.DragAndDrop.Helpers
-  open Elmish.DragAndDrop.Helpers.HelperTypes
+  open Elmish.DragAndDropHelpers
+  open Elmish.DragAndDropHelpers.HelperTypes
 
   type Model = {
     /// The cursor's current coordinates, updated when dragging to draw the ghost.
