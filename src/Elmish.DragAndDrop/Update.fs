@@ -77,16 +77,9 @@ module Update =
         let items' =
           ItemMoving.moveItem (startList, startIndex) (listIndex, index) model.Items
           |> Model.getUpdatedItemLocations
-        let mdl = { model with Items = items' } |> Model.buildItemDict // |> Model.setSlideOpt slide
+        let mdl = { model with Items = items' } // |> Model.buildItemDict // |> Model.setSlideOpt slide
         let newStartLoc = (listIndex, index, startingElementId)
         (Model.setDragSource newStartLoc mdl)
-        // let newStartLoc = Model.getItemLocation startingElementId mdl
-        // match newStartLoc with
-        // | None ->
-        //   mdl, Cmd.none
-        // | Some loc ->
-        //   let mdl = Model.setDragSource loc mdl
-        //   mdl, Cmd.none
       | None ->
         model
     | DragEnd ->
