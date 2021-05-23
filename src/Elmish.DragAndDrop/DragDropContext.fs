@@ -5,9 +5,9 @@ open Elmish.DragAndDropHelpers.HelperTypes
 
 module DragAndDrop =
 
-  // ************
+  // ************************************************************************************
   // MODEL
-  // ************
+  // ************************************************************************************
 
   type DragAndDropModel = {
     /// The cursor's current coordinates, updated when dragging to draw the ghost.
@@ -138,9 +138,9 @@ module DragAndDrop =
   /// The item was released and the drag has ended.
   | DragEnd
 
-  // ************
+  // ************************************************************************************
   // OTHER TYPES
-  // ************
+  // ************************************************************************************
 
   open Fable.React
   open Fable.React.Props
@@ -271,9 +271,9 @@ module DragAndDrop =
       |> addProps props
       |> render
 
-  // ************
+  // ************************************************************************************
   // DRAG HANDLE
-  // ************
+  // ************************************************************************************
 
   module internal Rendering =
     let private orEmpty li = Option.defaultValue [] li
@@ -386,9 +386,9 @@ module DragAndDrop =
         // since a handle only listens for drags, render it as normal if there is a drag.
         gen.Render()
 
-  // ************
+  // ************************************************************************************
   // DROP AREA
-  // ************
+  // ************************************************************************************
 
 
   type DropArea =
@@ -403,11 +403,6 @@ module DragAndDrop =
           |> List.concat
         div props children
       | Some { StartLocation = (listIndex, index, draggedElementId) } ->
-        let props = [
-          yield! props
-          Listeners.defaultReleaseListener dispatch
-          Listeners.defaultMouseMoveListener dispatch
-        ]
         let children =
           content
           |> List.map (fun (elementId, gen) ->
@@ -428,11 +423,6 @@ module DragAndDrop =
           |> List.concat
         tag (Seq.ofList props) (Seq.ofList children)
       | Some { StartLocation = (listIndex, index, draggedElementId) } ->
-        let props = [
-          yield! props
-          Listeners.defaultReleaseListener dispatch
-          Listeners.defaultMouseMoveListener dispatch
-        ]
         let children =
           content
           |> List.map (fun (elementId, gen) ->
@@ -451,11 +441,6 @@ module DragAndDrop =
           )
         div props children
       | Some { StartLocation = (listIndex, index, draggedElementId) } ->
-        let props = [
-          yield! props
-          Listeners.defaultReleaseListener dispatch
-          Listeners.defaultMouseMoveListener dispatch
-        ]
         let children =
           content
           |> List.map (fun (elementId, handle) ->
@@ -463,9 +448,26 @@ module DragAndDrop =
           )
         div props children
 
-  // ************
+  // ************************************************************************************
+  // DRAG AND DROP CONTEXT
+  // ************************************************************************************
+
+  type DragDropContext =
+    static member context model dispatch tag (props : IHTMLProp list) content =
+      match model.Moving with
+      | None ->
+        tag props content
+      | Some _ ->
+        let props = [
+          yield! props
+          Listeners.defaultReleaseListener dispatch
+          Listeners.defaultMouseMoveListener dispatch
+        ]
+        tag props content
+
+  // ************************************************************************************
   // UPDATE
-  // ************
+  // ************************************************************************************
 
 
   module internal ItemMoving =

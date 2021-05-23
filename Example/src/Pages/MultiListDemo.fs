@@ -85,7 +85,7 @@ module MultiListDemo =
         )
         |> DropArea.fromDragHandles model.DragAndDrop dispatch dragAndDropConfig dropAreaProps
       )
-    div [ ClassName "wrapper" ] dropAreaContent
+    DragDropContext.context model.DragAndDrop dispatch div [ ClassName "wrapper" ] dropAreaContent
 
   let update msg model =
     match msg with

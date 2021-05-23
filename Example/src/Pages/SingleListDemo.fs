@@ -74,7 +74,16 @@ module SingleListDemo =
 
   let view model (dispatch : Msg -> unit) =
     let dispatch = (mappedMsg >> dispatch)
-    let dropAreaProps = [ (ClassName "container") :> IHTMLProp ]
+    let dropAreaProps = [ 
+      //(ClassName "container") :> IHTMLProp 
+      Style [
+        Background "#33adff"
+        Display DisplayOptions.Table
+        Width 400
+        MarginLeft "auto"
+        MarginRight "auto"
+      ] :> IHTMLProp
+    ]
     let dropAreaContent =
       // note that element Ids are always a list of lists, to accomodate multiple categories.
       // see the Multi List Demo for an example of that.
@@ -87,7 +96,17 @@ module SingleListDemo =
         )
         |> DropArea.fromDragHandles model.DragAndDrop dispatch dragAndDropConfig dropAreaProps
       )
-    div [ ClassName "wrapper" ] dropAreaContent
+    let props : IHTMLProp list = [ 
+      ClassName "wrapper"
+      Style [
+        Display DisplayOptions.Flex
+        MarginLeft "auto"
+        MarginRight "auto"
+        Width "100%"
+      ]
+    ]
+    let content = dropAreaContent
+    DragDropContext.context model.DragAndDrop dispatch div props content
 
   let update msg model =
     match msg with

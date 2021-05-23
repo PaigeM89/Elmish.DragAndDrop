@@ -95,14 +95,15 @@ module HandlesDemo =
         )
         |> DropArea.fromGenerators model.DragAndDrop (mappedMsg >> dispatch) dragAndDropConfig dropAreaProps
       )
-    div [
-      Style [
-        Background "#0066ff"
-        Width "100%"
+    DragDropContext.context model.DragAndDrop (mappedMsg >> dispatch)
+      div [
+        Style [
+          Background "#0066ff"
+          Width "100%"
+        ]
+      ][
+        div [ ClassName "wrapper" ] dropAreaContent
       ]
-    ][
-      div [ ClassName "wrapper" ] dropAreaContent
-    ]
 
   let update msg model =
     match msg with

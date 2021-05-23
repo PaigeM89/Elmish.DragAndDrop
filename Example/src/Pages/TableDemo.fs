@@ -74,6 +74,7 @@ module TableDemo =
     let numericInput value =
       input [
         Value value
+        OnChange (fun ev -> ())
       ]
 
     let createTableRow model dispatch index (cv : ContentValue)=
@@ -95,6 +96,7 @@ module TableDemo =
           td [] [
             input [
               Value cv.SomeString
+              OnChange (fun ev -> ())
             ]
           ]
           td [] [
@@ -173,7 +175,7 @@ module TableDemo =
           ]
         ] [
           tableHeaders
-          
+
           DropArea.fromGeneratorsWithTag
             model.DragAndDrop
             (DndMsg >> dispatch)
@@ -181,18 +183,21 @@ module TableDemo =
             []
             rows
             tbody
-          
         ]
-      div [
+
+      let props : IHTMLProp list = [
         Style [
           Background "#43d8dc"
           PaddingTop 10
         ]
-      ] [
+      ]
+      let content = [
         addRowButton dispatch
         sampleDataInitButton dispatch
         table
       ]
+
+      DragDropContext.context model.DragAndDrop (DndMsg >> dispatch) div props content
   
   let addContent model cv =
     let dict = model.ContentMap |> Map.add (string cv.ContentId) cv
