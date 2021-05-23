@@ -31,8 +31,23 @@ module TableDemo =
     ContentMap = Map.empty
   }
 
+  let initWithSampleData() =
+    let data = [
+      { ContentValue.Empty() with SomeInt = 1; SomeString = "hello world"; IsChecked = true}
+      { ContentValue.Empty() with SomeInt = 3; SomeString = "foo"; IsChecked = true}
+      { ContentValue.Empty() with SomeInt = 5; SomeString = "bar"; IsChecked = false}
+      { ContentValue.Empty() with SomeInt = 7; SomeString = "bax"; IsChecked = false}
+    ]
+    let dnd = DragAndDropModel.createWithItems (data |> List.map (fun x -> x.ContentId |> string))
+    let m = data |> List.map(fun x -> (string x.ContentId), x) |> Map.ofList
+    {
+      DragAndDrop = dnd
+      ContentMap = m
+    }
+
   type Msg =
   | Init
+  | InitWithSampleData
   | DndMsg of DragAndDropMsg
   | AddRow
   | DeleteRow of rowId : Guid
@@ -58,7 +73,7 @@ module TableDemo =
 
     let numericInput value =
       input [
-        DefaultValue value
+        Value value
       ]
 
     let createTableRow model dispatch index (cv : ContentValue)=
@@ -79,7 +94,7 @@ module TableDemo =
           ]
           td [] [
             input [
-              DefaultValue cv.SomeString
+              Value cv.SomeString
             ]
           ]
           td [] [
@@ -87,6 +102,13 @@ module TableDemo =
               InputMode "checkbox"
               Checked cv.IsChecked
               OnChange (fun ev -> ())
+            ]
+          ]
+          td [] [
+            button [
+              OnClick (fun _ -> DeleteRow cv.ContentId |> dispatch)
+            ] [
+              str "Delete"
             ]
           ]
       ]
@@ -100,20 +122,38 @@ module TableDemo =
         Style [
           MarginLeft "auto"
           MarginRight "auto"
+          Display DisplayOptions.Block
+          MarginTop 10
+          MarginBottom 10
         ]
         OnClick (fun _ -> AddRow |> dispatch)
       ] [
         str "Add Row"
       ]
 
+    let sampleDataInitButton dispatch =
+      button [
+        Style [
+          MarginLeft "auto"
+          MarginRight "auto"
+          Display DisplayOptions.Block
+          MarginTop 10
+          MarginBottom 10
+        ]
+        OnClick (fun _ -> InitWithSampleData |> dispatch)
+      ] [
+        str "Initialize Sample Data"
+      ]
+
     let view model dispatch =
       let tableHeaders = 
         thead [] [
           tr [] [
-            th [] [ str "#"] // blank for drag handle
+            th [] [ str "#"]
             th [] [ str "Some Number" ]
             th [] [ str "Some String" ]
             th [] [ str "Some Checkbox" ]
+            th [] [] // empty for delete button
           ]
         ]
 
@@ -146,9 +186,11 @@ module TableDemo =
       div [
         Style [
           Background "#43d8dc"
+          PaddingTop 10
         ]
       ] [
         addRowButton dispatch
+        sampleDataInitButton dispatch
         table
       ]
   
@@ -157,10 +199,17 @@ module TableDemo =
     let dnd = DragAndDropModel.insertNewItemAtHead 0 (string cv.ContentId) model.DragAndDrop
     { model with ContentMap = dict; DragAndDrop = dnd }
 
+  let removeContent model id =
+    let m = model.ContentMap |> Map.remove (string id)
+    let dnd = DragAndDropModel.removeItem (string id) model.DragAndDrop
+    { model with ContentMap = m; DragAndDrop = dnd }
+
   let update msg model =
     match msg with
     | Init ->
       model, Cmd.none
+    | InitWithSampleData ->
+      (initWithSampleData()), Cmd.none
     | DndMsg msg ->
       let dndModel = dragAndDropUpdate msg model.DragAndDrop
       { model with DragAndDrop = dndModel }, Cmd.none
@@ -169,4 +218,5 @@ module TableDemo =
       let model = addContent model row
       model, Cmd.none
     | DeleteRow rowId ->
+      let model = removeContent model rowId
       model, Cmd.none
