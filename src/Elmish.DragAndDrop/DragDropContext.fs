@@ -66,6 +66,14 @@ module DragAndDrop =
       let itemsWithLocs = initItemLocations [items]
       { DragAndDropModel.Empty() with Items = itemsWithLocs }
 
+    /// Looks up the listindex, index of an item by Id, or None if that Id is not found.
+    let findItemById (itemId : string) model =
+      model.Items
+      |> List.tryPick(fun li ->
+        li
+        |> List.tryPick (fun (listIndex, index, elementId) -> if itemId = elementId then Some (listIndex, index) else None)
+      )
+
     /// Inserts a new item at the specified indexes. If a list does not exist at the list index, 
     /// a new list will be created at the last index.
     let insertNewItemAt listIndex itemIndex (itemId : string) model =
@@ -114,7 +122,6 @@ module DragAndDrop =
     let replaceItemAt listIndex itemIndex newItem model =
       insertNewItemAt listIndex itemIndex newItem model
       |> removeItemAt listIndex (itemIndex + 1)
-
 
   let internal setDragSource loc model =
     match model.Moving with
@@ -188,7 +195,7 @@ module DragAndDrop =
       )
 
     let defaultReleaseListener dispatch =
-      OnMouseUp (fun (ev : MouseEvent) -> ev.preventDefault();  DragEnd |> dispatch)
+      OnMouseUp (fun (ev : MouseEvent) -> ev.preventDefault(); DragEnd |> dispatch)
 
   type DragAndDropConfig = {
     /// CSS Styles applied to the currently dragged element.
@@ -547,6 +554,28 @@ module DragAndDrop =
         model
     | DragEnd ->
       { model with Moving = None; Offset = None }
+
+  let dragAndDropMaybeUpdate msg model =
+    match msg with
+    | DragStart (loc, startCoords, offset) ->
+      let movingStatus = MovingStatus.Init (loc) |> Some
+      { model with Moving = movingStatus; Cursor = startCoords; Offset = Some offset } |> Some
+    | DragAndDropMsg.OnDrag coords ->
+      {model with Cursor = coords } |> Some
+    | DragOver (listIndex, index, elementId) ->
+      match model.Moving with
+      | Some { StartLocation = (startList, startIndex, startingElementId) }->
+        let slide = None //tryGetSlide elementId
+        let items' =
+          ItemMoving.moveItem (startList, startIndex) (listIndex, index) model.Items
+          |> getUpdatedItemLocations
+        let mdl = { model with Items = items' } // |> Model.setSlideOpt slide
+        let newStartLoc = (listIndex, index, startingElementId)
+        ( setDragSource newStartLoc mdl) |> Some
+      | None ->
+        None
+    | DragEnd ->
+      { model with Moving = None; Offset = None } |> Some
 
   let updateWithCmd msg model =
     let mdl = dragAndDropUpdate msg model
