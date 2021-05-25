@@ -214,8 +214,8 @@ module TableDemo =
     | InitWithSampleData ->
       (initWithSampleData()), Cmd.none
     | DndMsg msg ->
-      let dndModel = dragAndDropUpdate msg model.DragAndDrop
-      { model with DragAndDrop = dndModel }, Cmd.none
+      let dndModel, cmd = dragAndDropUpdate msg model.DragAndDrop
+      { model with DragAndDrop = dndModel }, Cmd.map DndMsg cmd
     | AddRow ->
       let row = ContentValue.Empty()
       let model = addContent model row

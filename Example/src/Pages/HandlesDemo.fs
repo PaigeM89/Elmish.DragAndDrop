@@ -16,8 +16,6 @@ module HandlesDemo =
     | UserInput (_, n) -> n
     | Output (_, n) -> n
 
-  //type ContentValue = { UserInput : string; Name : string}
-
   type Model = {
     DragAndDrop : DragAndDropModel
     ContentMap : Map<ContentKey, ContentType>
@@ -95,12 +93,6 @@ module HandlesDemo =
 
   let createGenerators dndModel (rootElementId : string) dispatch (value : ContentType) =
     let handleStyles = if dndModel.Moving.IsSome then [] else [ Cursor "grab" ]
-    // let content = [
-    //   DragHandle.Rendered dndModel rootElementId (mappedMsg >> dispatch) (
-    //     ElementGenerator.Create (sprintf "%s-handle" rootElementId) handleStyles [] [h3 [] [ str (getName value)]]
-    //   )
-    //   generateContentType rootElementId dispatch value
-    // ]
     generateContentType dndModel handleStyles rootElementId dispatch value
     |> ElementGenerator.Create rootElementId defaultStyles []
 
@@ -120,14 +112,10 @@ module HandlesDemo =
       |> List.map (fun li ->
         li
         |> List.map (fun (rootElementId) ->
-          let content =
             inputValueLookup model rootElementId
             |> createGenerators model.DragAndDrop rootElementId dispatch
             |> Draggable.draggable model.DragAndDrop dragAndDropConfig (mappedMsg >> dispatch)
-          //rootElementId, content
-          content
         )
-        //|> DropArea.fromGenerators model.DragAndDrop (mappedMsg >> dispatch) dragAndDropConfig dropAreaProps
       )
       |> List.concat
       |> DropArea.fromDraggables div dropAreaProps
@@ -148,7 +136,6 @@ module HandlesDemo =
         for i in 1..8 do 
           if i % 2 = 0 then
             yield (sprintf "input-%i" i |> generateRootId), UserInput ("", (sprintf "Input %i" i))
-              //{ UserInput = ""; Name = sprintf "Input %i" i }
           else
             yield (sprintf "output-%i" i |> generateRootId), Output (sprintf "Generated output #%i" i, sprintf "Output %i" i)
       ]
@@ -157,8 +144,8 @@ module HandlesDemo =
       let dndModel = DragAndDropModel.createWithItems elementIds
       { model with DragAndDrop = dndModel; ContentMap = m }, Cmd.none
     | DndMsg msg ->
-      let dndModel = dragAndDropUpdate msg model.DragAndDrop
-      { model with DragAndDrop = dndModel }, Cmd.none
+      let dndModel, cmd = dragAndDropUpdate msg model.DragAndDrop
+      { model with DragAndDrop = dndModel }, Cmd.map DndMsg cmd
     | InputChange (elementId, newValue) ->
       match Map.tryFind elementId model.ContentMap with
       | Some (UserInput (_, name)) ->
@@ -167,6 +154,5 @@ module HandlesDemo =
         { model with ContentMap = m }, Cmd.none
       | _ ->
         let newValue = Output (sprintf "Element %s not found" elementId, "Not found")
-          //{ UserInput = newValue; Name = "" }
         let m = Map.add elementId newValue model.ContentMap
         { model with ContentMap = m }, Cmd.none
