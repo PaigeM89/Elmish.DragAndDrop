@@ -9,6 +9,7 @@ module DragAndDrop =
   // MODEL
   // ************************************************************************************
 
+
   type DragAndDropModel = {
     /// The cursor's current coordinates, updated when dragging to draw the ghost.
     Cursor : Coords
@@ -54,7 +55,20 @@ module DragAndDrop =
       )
     )
 
+  /// Status of the current drag, if any.
+  type DragStatus =
+  /// No drag currently happening
+  | NoActiveDrag
+  /// The user is dragging an element
+  | ActiveDrag of draggedElementId : ElementId
+
   module DragAndDropModel =
+    
+    /// Returns the status of the drag, if any. If there is an active drag, the element Id will be returned too.
+    let toDragStatus (model : DragAndDropModel) =
+      match model.Moving with
+      | Some { StartLocation = (_, _, elementId) } -> ActiveDrag elementId
+      | None -> NoActiveDrag
 
     /// Creates a new Model initialied with items in multiple lists
     let createWithItemsMultiList (items : ElementId list list) =
@@ -152,9 +166,9 @@ module DragAndDrop =
   open Fable.React
   open Fable.React.Props
 
-  let private getLocationForElement elementId model = 
+  let private getLocationForElement itemId model = 
     model.Items
-    |> List.map (fun li -> li |> List.tryFind (fun (_, _, id) -> id = elementId))
+    |> List.map (fun li -> li |> List.tryFind (fun (_, _, id) -> id = itemId))
     |> List.choose id
     |> List.tryHead
 
@@ -163,8 +177,8 @@ module DragAndDrop =
     open Elmish.DragAndDropHelpers.BrowserHelpers
     open Fable.Core
 
-    let defaultDraggable model elementId dispatch =
-      let loc = getLocationForElement elementId model
+    let defaultDraggable model (draggableId : DraggableId) dispatch =
+      let loc = getLocationForElement draggableId model
       match loc with
       | Some loc ->
         OnMouseDown (fun (ev : Browser.Types.MouseEvent) ->
@@ -173,7 +187,7 @@ module DragAndDrop =
           (loc, fromME ev, o) |> DragStart |> dispatch
         )
       | None -> 
-        JS.console.error(sprintf "No location found for element with id '%s' in drag and drop items" elementId)
+        JS.console.error(sprintf "No location found for element with id '%s' in drag and drop items" draggableId)
         OnMouseDown (fun (ev : Browser.Types.MouseEvent) -> ())
 
     let defaultMouseMoveListener dispatch =
@@ -228,14 +242,7 @@ module DragAndDrop =
       ListenerElementProperties = None
     }
 
-  /// Status of the current drag, if any.
-  type DragStatus =
-  /// No drag currently happening
-  | NoActiveDrag
-  /// The user is dragging an element
-  | ActiveDrag of draggedElementId : ElementId
-
-  /// Used to generate a `ReactElement` after applying any appropriate styles.
+  /// Used to generate a `ReactElement` after applying any appropriate styles or properties.
   type ElementGenerator = {
     /// The Id of the element to generate. This will be automatically added to the Props when
     /// the ReactElement is generated.
@@ -282,13 +289,47 @@ module DragAndDrop =
   // DRAG HANDLE
   // ************************************************************************************
 
+  module internal Building =
+    let private orEmpty li = Option.defaultValue [] li
+    // because property ordering is important, this reverses the append on a list
+    let private appendR li1 li2 = li2 @ li1
+    
+    let buildDragged config cursor id gen =
+      let idProp = (Id id) :> IHTMLProp
+      let appendedStyles = 
+        config.DraggedElementStyles |> orEmpty |> appendR [
+          PointerEvents "none"
+          Left cursor.x
+          Top cursor.y
+        ]
+      let props = config.DraggedElementProperties |> orEmpty |> appendR [idProp]
+      gen
+      |> ElementGenerator.addProps props
+      |> ElementGenerator.addStyles appendedStyles
+
+    let buildHoverPreview config id gen =
+      let idProp = (Id id) :> IHTMLProp
+      let styles = config.HoverPreviewElementStyles |> orEmpty
+      let props = config.HoverPreviewElementProperties |> orEmpty |> appendR [ idProp ]
+      gen
+      |> ElementGenerator.addStyles styles
+      |> ElementGenerator.addProps props
+
+    let buildHoverListener config model id dispatch gen =
+      let listener = Listeners.defaultHoverListener model id dispatch
+      let styles = config.ListenerElementStyles |> orEmpty
+      let props = config.ListenerElementProperties |> orEmpty |> appendR [listener]
+      gen
+      |> ElementGenerator.addStyles styles
+      |> ElementGenerator.addProps props
+
   module internal Rendering =
     let private orEmpty li = Option.defaultValue [] li
     // because property ordering is important, this reverses the append on a list
     let private appendR li1 li2 = li2 @ li1
 
     /// Renders a handle, a collection of elements with a drag listener.
-    let renderHandle mdl id dispatch gen =
+    let renderHandle mdl (id : DraggableId) dispatch gen =
       let listener = (Listeners.defaultDraggable mdl id dispatch) :> IHTMLProp
       gen
       |> ElementGenerator.addProps [listener]
@@ -349,7 +390,6 @@ module DragAndDrop =
 
   type DragHandle = {
     Generator : ElementGenerator
-    // DraggableElementId : ElementId
   } with
     static member Rendered mdl draggableElementId dispatch gen =
       match mdl.Moving with
@@ -367,6 +407,49 @@ module DragAndDrop =
       | Some _ ->
         this.Generator.Render()
 
+    static member dragHandle model (id : DraggableId) dispatch gen =
+      match model.Moving with
+      | None ->
+        Rendering.renderHandle model id dispatch gen
+      | Some _ ->
+        // since a handle only listens for drags, render it as normal (no listeners) if there is a drag.
+        gen.Render()
+
+  type Draggable = {
+    Generators : ElementGenerator list
+  } with
+    static member draggable model config dispatch gen = 
+      match model.Moving with
+      | None ->
+        { Generators = [gen] }
+      | Some { StartLocation = (_, _, draggedElementId )} ->
+        if gen.Id = draggedElementId then
+          let draggedGenerator = Building.buildDragged config model.Cursor gen.Id gen
+          let hoverPreviewGenerator = Building.buildHoverPreview config gen.Id gen
+          { Generators = [hoverPreviewGenerator; draggedGenerator] }
+        else
+          { Generators = [ Building.buildHoverListener config model gen.Id dispatch gen ] }
+
+    /// Creates a new `Draggable` where the whole element is a `DragHandle`. This will cause all of the children
+    /// to not be able to be clicked on, so interactable elements won't work as expected.
+    static member asDragHandle model config dispatch gen =
+      let handleId = gen.Id + "-handle"
+      let handleGen = ElementGenerator.Create handleId [] [] gen.Content
+      match model.Moving with
+      | None ->
+        let handle = DragHandle.dragHandle model gen.Id dispatch handleGen
+        let gen = { gen with Content = [ handle ]}
+        { Generators = [ gen ]}
+      | Some { StartLocation = (_, _, draggedElementId )} ->
+        let handle = DragHandle.dragHandle model gen.Id dispatch handleGen
+        let gen = { gen with Content = [ handle ]}
+        if gen.Id = draggedElementId then
+          let draggedGenerator = Building.buildDragged config model.Cursor gen.Id gen
+          let hoverPreviewGenerator = Building.buildHoverPreview config gen.Id gen
+          { Generators = [hoverPreviewGenerator; draggedGenerator] }
+        else
+          { Generators = [ Building.buildHoverListener config model gen.Id dispatch gen ] }
+
   let internal renderDragHandle dragStatus model config id dispatch (handle : DragHandle) =
     match dragStatus with
     | NoActiveDrag ->
@@ -380,18 +463,6 @@ module DragAndDrop =
       else
         Rendering.renderWithHoverListener config model id dispatch handle.Generator
 
-  /// An element the user can interact with to drag an element. Can reference a parent by Id, or itself (by Id).
-  type DragHandleOld =
-    /// Creates a handle that will drag an associated element Id
-    /// Note that the elementId set here does not have to be the id of the handle, but can be
-    /// a parent element that you want to drag
-    static member dragHandle mdl draggableElementId dispatch (gen : ElementGenerator) = 
-      match mdl.Moving with
-      | None ->
-        Rendering.renderHandle mdl draggableElementId dispatch gen
-      | Some _ ->
-        // since a handle only listens for drags, render it as normal if there is a drag.
-        gen.Render()
 
   // ************************************************************************************
   // DROP AREA
@@ -454,6 +525,10 @@ module DragAndDrop =
             renderDragHandle (DragStatus.ActiveDrag draggedElementId) model config elementId dispatch handle
           )
         div props children
+
+    static member fromDraggables tag props (draggables : Draggable list) =
+      let content = draggables |> List.map (fun x -> x.Generators |> List.map (fun g -> g.Render())) |> List.concat
+      tag props content
 
   // ************************************************************************************
   // DRAG AND DROP CONTEXT

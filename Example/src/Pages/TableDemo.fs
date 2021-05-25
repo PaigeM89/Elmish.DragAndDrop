@@ -172,6 +172,9 @@ module TableDemo =
           Style [
             MarginLeft "auto"
             MarginRight "auto"
+            Background "#33adff"
+            PaddingTop 10
+            MarginTop 20
           ]
         ] [
           tableHeaders
@@ -187,8 +190,10 @@ module TableDemo =
 
       let props : IHTMLProp list = [
         Style [
-          Background "#43d8dc"
+          //Background "#43d8dc"
+          Background "#0066ff"
           PaddingTop 10
+          PaddingBottom 100
         ]
       ]
       let content = [

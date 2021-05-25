@@ -54,6 +54,7 @@ module List =
 
 module HelperTypes =
   type ElementId = string
+  type DraggableId = string
 
   type Coords = { x : float; y : float}
       with

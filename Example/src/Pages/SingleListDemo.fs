@@ -63,6 +63,20 @@ module SingleListDemo =
       ]
   }
 
+  let createDragHandle model elementId rootElementId dispatch =
+    let element =
+      Map.tryFind elementId model.ContentMap
+      |> Option.defaultValue (div [] [])
+    let handleId = elementId + "-handle"
+    ElementGenerator.Create handleId [ Cursor "grab" ] [] [element]
+    |> DragHandle.Rendered model.DragAndDrop rootElementId dispatch
+
+  let createDraggable model elementId dispatch =
+    let rootId = elementId // making these equal makes the whole thing draggable
+    let handle = createDragHandle model elementId rootId dispatch
+    ElementGenerator.Create rootId [] [ ClassName "content" ] [ handle ]
+    |> Draggable.draggable model.DragAndDrop dragAndDropConfig dispatch
+
   let createGenerator model elementId =
     let element =
       Map.tryFind elementId model.ContentMap
@@ -91,10 +105,13 @@ module SingleListDemo =
       |> List.map(fun li ->
         li
         |> List.map (fun id ->
-          let content = createGenerator model id
-          id, content
+          //let content = createGenerator model id
+          let content = createDraggable model id dispatch
+          //id, content
+          content
         )
-        |> DropArea.fromDragHandles model.DragAndDrop dispatch dragAndDropConfig dropAreaProps
+        //|> DropArea.fromDragHandles model.DragAndDrop dispatch dragAndDropConfig dropAreaProps
+        |> DropArea.fromDraggables div dropAreaProps
       )
     let props : IHTMLProp list = [ 
       ClassName "wrapper"

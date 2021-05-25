@@ -2,12 +2,12 @@
     <PropertyGroup>
         <!-- summary is not migrated from project.json, but you can use the <Description> property for that if needed. -->
         <PackageTags>f#, fsharp</PackageTags>
-        <PackageProjectUrl>https://github.com/MyGithubUsername/Elmish.DragAndDrop</PackageProjectUrl>
-        <PackageLicenseUrl>https://github.com/MyGithubUsername/Elmish.DragAndDrop/blob/master/LICENSE.md</PackageLicenseUrl>
+        <PackageProjectUrl>https://github.com/PaigeM89/Elmish.DragAndDrop</PackageProjectUrl>
+        <PackageLicenseUrl>https://github.com/PaigeM89/Elmish.DragAndDrop/blob/master/LICENSE.md</PackageLicenseUrl>
         <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
         <RepositoryType>git</RepositoryType>
-        <Authors>MyGithubUsername</Authors>
-        <RepositoryUrl>https://github.com/MyGithubUsername/Elmish.DragAndDrop</RepositoryUrl>
+        <Authors>PaigeM89</Authors>
+        <RepositoryUrl>https://github.com/PaigeM89/Elmish.DragAndDrop</RepositoryUrl>
         <!-- owners is not supported in MSBuild -->
     </PropertyGroup>
 </Project>
