@@ -11,6 +11,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Can now find item list index & index by Id.
 - Added APIs For `Draggables`, separating the logic between what is grabbable and what actually drags.
 
+### Removed
+- Removed APIs for creating `DropAreas` from `DragHandles`, as `DragHandles` now immediately turn into `ReactElements` and cannot be deferred to render later.
+
 ## [0.3.0-alpha01] - 2021-05-23
 
 ### Added

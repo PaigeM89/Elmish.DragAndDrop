@@ -84,11 +84,10 @@ module TableDemo =
 
       let content = [
           td [] [
-            DragHandle.Rendered model.DragAndDrop rootElementId (DndMsg >> dispatch) (
-              ElementGenerator.Create (rowId + "-handle") handleStyles [] [
-                h2 [] [ str (string index)]
-              ]
-            )
+            ElementGenerator.Create (rowId + "-handle") handleStyles [] [
+              h2 [] [ str (string index)]
+            ]
+            |> DragHandle.dragHandle model.DragAndDrop rowId (dndMsg >> dispatch)
           ]
           td [] [
             numericInput cv.SomeInt
@@ -117,7 +116,7 @@ module TableDemo =
       let gen = 
         ElementGenerator.Create rootElementId [] [Id rowId ] content
         |> ElementGenerator.setTag tr
-      rowId, gen
+      Draggable.draggable model.DragAndDrop dragAndDropConfig (dndMsg >> dispatch) gen
 
     let addRowButton dispatch = 
       button [
@@ -179,13 +178,7 @@ module TableDemo =
         ] [
           tableHeaders
 
-          DropArea.fromGeneratorsWithTag
-            model.DragAndDrop
-            (DndMsg >> dispatch)
-            dragAndDropConfig
-            []
-            rows
-            tbody
+          DropArea.fromDraggables tbody [] rows
         ]
 
       let props : IHTMLProp list = [

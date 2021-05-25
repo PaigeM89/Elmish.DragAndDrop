@@ -72,13 +72,6 @@ module MultiListDemo =
     ElementGenerator.Create elementId [ Cursor "grab" ] [ ClassName "content" ] [ element ]
     |> Draggable.asDragHandle model.DragAndDrop dragAndDropConfig dispatch
 
-  let createGenerator model elementId =
-    let element =
-      Map.tryFind elementId model.ContentMap
-      |> Option.defaultValue (div [] [])
-    ElementGenerator.Create elementId [ Cursor "grab" ] [ ClassName "content" ] [element]
-    |> DragHandle.Deferred
-
   let view model (dispatch : Msg -> unit) =
     let dispatch = mappedMsg >> dispatch
     let leftDropAreaProps : IHTMLProp list = [
@@ -101,12 +94,9 @@ module MultiListDemo =
         let props = if index % 2 = 0 then leftDropAreaProps else rightDropAreaProps
         li
         |> List.map (fun id ->
-          // let content = createGenerator model id
-          // id, content
           createDraggable model id dispatch
         )
         |> DropArea.fromDraggables div props
-        //|> DropArea.fromDragHandles model.DragAndDrop dispatch dragAndDropConfig dropAreaProps
       )
     let contextProps : IHTMLProp list = [
       Style [

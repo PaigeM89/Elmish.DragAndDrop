@@ -388,25 +388,10 @@ module DragAndDrop =
       else
         [Rendering.renderWithHoverListener config model id dispatch gen]
 
-  type DragHandle = {
-    Generator : ElementGenerator
-  } with
-    static member Rendered mdl draggableElementId dispatch gen =
-      match mdl.Moving with
-      | None ->
-        Rendering.renderHandle mdl draggableElementId dispatch gen
-      | Some _ ->
-        // since a handle only listens for drags, render it as normal (no listeners) if there is a drag.
-        gen.Render()
-    static member Deferred gen =
-      { Generator = gen }
-    member this.Render model id dispatch =
-      match model.Moving with
-      | None ->
-        Rendering.renderHandle model id dispatch this.Generator
-      | Some _ ->
-        this.Generator.Render()
-
+  /// Defines an object that can be clicked on to drag elements.
+  type DragHandle =
+    /// Creates a new `DragHandle`. The `id` passed here is the id of the `Draggable`, NOT the id of this
+    /// `DragHandle`. The `DragHandle` id should be defined in the `gen` given to this function.
     static member dragHandle model (id : DraggableId) dispatch gen =
       match model.Moving with
       | None ->
@@ -415,9 +400,14 @@ module DragAndDrop =
         // since a handle only listens for drags, render it as normal (no listeners) if there is a drag.
         gen.Render()
 
+  /// Defines an object that can be dragged. A `Draggable` is not automatically able to be 
+  /// dragged unless it somehow includes a `DragHandle`; a `Draggable` is merely a way to identify
+  /// elements that should be able to move.
   type Draggable = {
     Generators : ElementGenerator list
   } with
+    /// Creates a new `Draggable`. The `ElementGenerator` passed in must contain a `DragHandle` somewhere in order for
+    /// this element to be able to be dragged.
     static member draggable model config dispatch gen = 
       match model.Moving with
       | None ->
@@ -450,82 +440,14 @@ module DragAndDrop =
         else
           { Generators = [ Building.buildHoverListener config model gen.Id dispatch gen ] }
 
-  let internal renderDragHandle dragStatus model config id dispatch (handle : DragHandle) =
-    match dragStatus with
-    | NoActiveDrag ->
-      handle.Render model id dispatch
-    | ActiveDrag draggedElementId ->
-      if id = draggedElementId then
-        div [] [
-          Rendering.renderDragged config model.Cursor id handle.Generator
-          Rendering.renderHoverPreview config id handle.Generator
-        ]
-      else
-        Rendering.renderWithHoverListener config model id dispatch handle.Generator
-
-
   // ************************************************************************************
   // DROP AREA
   // ************************************************************************************
 
-
+  /// An area where `Draggables` live and can be moved.
   type DropArea =
-    static member fromGenerators model dispatch config props content =
-      match model.Moving with
-      | None ->
-        let children =
-          content
-          |> List.map (fun (elementId, gen) ->
-            toDraggables DragStatus.NoActiveDrag model config elementId dispatch gen
-          )
-          |> List.concat
-        div props children
-      | Some { StartLocation = (listIndex, index, draggedElementId) } ->
-        let children =
-          content
-          |> List.map (fun (elementId, gen) ->
-            toDraggables (DragStatus.ActiveDrag draggedElementId) model config elementId dispatch gen
-          )
-          |> List.concat
 
-        div props children
-    
-    static member fromGeneratorsWithTag model dispatch config (props: IHTMLProp list) content tag =
-      match model.Moving with
-      | None ->
-        let children =
-          content
-          |> List.map (fun (elementId, gen) ->
-            toDraggables DragStatus.NoActiveDrag model config elementId dispatch gen
-          )
-          |> List.concat
-        tag (Seq.ofList props) (Seq.ofList children)
-      | Some { StartLocation = (listIndex, index, draggedElementId) } ->
-        let children =
-          content
-          |> List.map (fun (elementId, gen) ->
-            toDraggables (DragStatus.ActiveDrag draggedElementId) model config elementId dispatch gen
-          )
-          |> List.concat
-        tag (Seq.ofList props) (Seq.ofList children)
-
-    static member fromDragHandles model dispatch config props content =
-      match model.Moving with
-      | None ->
-        let children =
-          content
-          |> List.map (fun (elementId : ElementId, handle : DragHandle) -> 
-            renderDragHandle DragStatus.NoActiveDrag model config elementId dispatch handle
-          )
-        div props children
-      | Some { StartLocation = (listIndex, index, draggedElementId) } ->
-        let children =
-          content
-          |> List.map (fun (elementId, handle) ->
-            renderDragHandle (DragStatus.ActiveDrag draggedElementId) model config elementId dispatch handle
-          )
-        div props children
-
+    /// Creates a `DropArea` from the given `Draggables`.
     static member fromDraggables tag props (draggables : Draggable list) =
       let content = draggables |> List.map (fun x -> x.Generators |> List.map (fun g -> g.Render())) |> List.concat
       tag props content
