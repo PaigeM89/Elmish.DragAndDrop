@@ -63,6 +63,7 @@ module MultiListDemo =
         Opacity 0.2
         PointerEvents "None"
       ]
+      MoveThrottleTimeMs = Some (System.TimeSpan.FromMilliseconds 500.)
   }
 
   let createDraggable model elementId dispatch =
@@ -112,5 +113,5 @@ module MultiListDemo =
     | Init ->
       model, Cmd.none
     | DndMsg msg ->
-      let dndModel = dragAndDropUpdate msg model.DragAndDrop
-      { model with DragAndDrop = dndModel }, Cmd.none
+      let dndModel, cmd = dragAndDropUpdate msg model.DragAndDrop
+      { model with DragAndDrop = dndModel }, Cmd.map DndMsg cmd

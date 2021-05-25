@@ -1,7 +1,10 @@
 namespace Elmish
 
+open Elmish
 open Elmish.DragAndDropHelpers
 open Elmish.DragAndDropHelpers.HelperTypes
+open Elmish.Throttle
+
 
 module DragAndDrop =
 
@@ -20,6 +23,8 @@ module DragAndDrop =
     Offset : Coords option
     /// The items to be sorted. If there are multiple containers, use multiple lists.
     Items : (ItemLocation) list list
+
+    ThrottleState: Map<string, Throttle.Status>
   } with
     /// Returns the Ids of each component in the model, in the order they are currently sorted
     member this.ElementIds() =
@@ -34,6 +39,7 @@ module DragAndDrop =
       Moving = None
       Offset = None
       Items = []
+      ThrottleState = Map.empty
     }
 
   let private initItemLocations lists =
@@ -158,6 +164,7 @@ module DragAndDrop =
   | DragOver of loc : ItemLocation
   /// The item was released and the drag has ended.
   | DragEnd
+  | ThrottleMsg of Throttle.Msg
 
   // ************************************************************************************
   // OTHER TYPES
@@ -198,14 +205,27 @@ module DragAndDrop =
       )
 
     /// Listener for when another element is being dragged and is moved over this element.
-    let defaultHoverListener model id dispatch =
+    let defaultHoverListener model id dispatch throttleTimeSpan =
       OnMouseEnter (fun (ev : MouseEvent) ->
         ev.preventDefault()
-        let loc = getLocationForElement id model
-        match loc with
-        | Some loc ->
-          DragOver loc |> dispatch
-        | None -> ()
+        match throttleTimeSpan with
+        | Some timespan ->
+            let isThrottled = throttle model.ThrottleState id timespan ev
+            match isThrottled with
+            | None -> ()
+            | Some (ev, throttleMsg) ->
+                throttleMsg |> ThrottleMsg |> dispatch
+                let loc = getLocationForElement id model
+                match loc with
+                | Some loc ->
+                    DragOver loc |> dispatch
+                | None -> ()
+        | None ->
+            let loc = getLocationForElement id model
+            match loc with
+            | Some loc ->
+                DragOver loc |> dispatch
+            | None -> ()
       )
 
     let defaultReleaseListener dispatch =
@@ -230,6 +250,8 @@ module DragAndDrop =
     /// HTML Properties applied to the elements listening for a hover event.
     /// During a drag, this is all elements.
     ListenerElementProperties : IHTMLProp list option
+
+    MoveThrottleTimeMs : System.TimeSpan option
   } with
     static member Empty() = {
       DraggedElementStyles = None
@@ -240,6 +262,7 @@ module DragAndDrop =
       SlidingElementProperties = None
       ListenerElementStyles = None
       ListenerElementProperties = None
+      MoveThrottleTimeMs = None
     }
 
   /// Used to generate a `ReactElement` after applying any appropriate styles or properties.
@@ -316,7 +339,7 @@ module DragAndDrop =
       |> ElementGenerator.addProps props
 
     let buildHoverListener config model id dispatch gen =
-      let listener = Listeners.defaultHoverListener model id dispatch
+      let listener = Listeners.defaultHoverListener model id dispatch config.MoveThrottleTimeMs
       let styles = config.ListenerElementStyles |> orEmpty
       let props = config.ListenerElementProperties |> orEmpty |> appendR [listener]
       gen
@@ -353,7 +376,7 @@ module DragAndDrop =
       gen |> ElementGenerator.renderWith styles props
     
     let renderWithHoverListener config model id dispatch gen =
-      let listener = Listeners.defaultHoverListener model id dispatch
+      let listener = Listeners.defaultHoverListener model id dispatch config.MoveThrottleTimeMs
       let styles = config.ListenerElementStyles |> orEmpty
       let props = config.ListenerElementProperties |> orEmpty |> appendR [listener]
       gen |> ElementGenerator.renderWith styles props
@@ -534,9 +557,9 @@ module DragAndDrop =
     match msg with
     | DragStart (loc, startCoords, offset) ->
       let movingStatus = MovingStatus.Init (loc) |> Some
-      { model with Moving = movingStatus; Cursor = startCoords; Offset = Some offset }
+      { model with Moving = movingStatus; Cursor = startCoords; Offset = Some offset }, Cmd.none
     | DragAndDropMsg.OnDrag coords ->
-      {model with Cursor = coords }
+      {model with Cursor = coords }, Cmd.none
     | DragOver (listIndex, index, elementId) ->
       match model.Moving with
       | Some { StartLocation = (startList, startIndex, startingElementId) }->
@@ -546,34 +569,20 @@ module DragAndDrop =
           |> getUpdatedItemLocations
         let mdl = { model with Items = items' } // |> Model.setSlideOpt slide
         let newStartLoc = (listIndex, index, startingElementId)
-        ( setDragSource newStartLoc mdl)
+        (setDragSource newStartLoc mdl), Cmd.none
       | None ->
-        model
+        model, Cmd.none
     | DragEnd ->
-      { model with Moving = None; Offset = None }
-
-  let dragAndDropMaybeUpdate msg model =
-    match msg with
-    | DragStart (loc, startCoords, offset) ->
-      let movingStatus = MovingStatus.Init (loc) |> Some
-      { model with Moving = movingStatus; Cursor = startCoords; Offset = Some offset } |> Some
-    | DragAndDropMsg.OnDrag coords ->
-      {model with Cursor = coords } |> Some
-    | DragOver (listIndex, index, elementId) ->
-      match model.Moving with
-      | Some { StartLocation = (startList, startIndex, startingElementId) }->
-        let slide = None //tryGetSlide elementId
-        let items' =
-          ItemMoving.moveItem (startList, startIndex) (listIndex, index) model.Items
-          |> getUpdatedItemLocations
-        let mdl = { model with Items = items' } // |> Model.setSlideOpt slide
-        let newStartLoc = (listIndex, index, startingElementId)
-        ( setDragSource newStartLoc mdl) |> Some
-      | None ->
-        None
-    | DragEnd ->
-      { model with Moving = None; Offset = None } |> Some
-
-  let updateWithCmd msg model =
-    let mdl = dragAndDropUpdate msg model
-    mdl, Cmd.none
+      { model with Moving = None; Offset = None }, Cmd.none
+    | ThrottleMsg throttleMsg ->
+      // let the throttler handle the message
+      let throttleResult = handleThrottleMsg throttleMsg model.ThrottleState
+      match throttleResult with
+      // get back a new state and a command 
+      | Ok (throttleState, throttleCmd) ->
+          // map the command so it's run
+          { model with ThrottleState = throttleState }, Cmd.map ThrottleMsg throttleCmd
+      | Error e ->
+          //printfn "Error throttling: %A" e
+          Fable.Core.JS.console.error("Error throttling: ", e)
+          model, Cmd.none

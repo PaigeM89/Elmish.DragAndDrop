@@ -35,11 +35,20 @@ NUGET
       Fable.Elmish (>= 3.0) - restriction: >= netstandard2.0
       Fable.React (>= 5.1) - restriction: >= netstandard2.0
       FSharp.Core (>= 4.6.2) - restriction: >= netstandard2.0
+    Fable.Elmish.Throttle (0.1)
+      Fable.Browser.Dom (>= 2.4) - restriction: >= netstandard2.0
+      Fable.Core (>= 3.2.7) - restriction: >= netstandard2.0
+      Fable.Elmish (>= 3.1) - restriction: >= netstandard2.0
+      Fable.Promise (>= 2.2) - restriction: >= netstandard2.0
+      FSharp.Core (>= 5.0.1) - restriction: >= netstandard2.0
+    Fable.Promise (2.2) - restriction: >= netstandard2.0
+      Fable.Core (>= 3.1.5) - restriction: >= netstandard2.0
+      FSharp.Core (>= 5.0) - restriction: >= netstandard2.0
     Fable.React (7.4)
       Fable.Browser.Dom (>= 2.0.1) - restriction: >= netstandard2.0
       Fable.Core (>= 3.1.5) - restriction: >= netstandard2.0
       FSharp.Core (>= 4.7.2) - restriction: >= netstandard2.0
-    FSharp.Core (5.0)
+    FSharp.Core (5.0.1)
     Microsoft.Build.Tasks.Git (1.0) - copy_local: true
     Microsoft.CodeCoverage (16.8) - restriction: || (>= net45) (>= netcoreapp2.1)
     Microsoft.CSharp (4.7) - restriction: || (&& (< netstandard1.3) (>= uap10.0)) (&& (< netstandard2.0) (>= uap10.0))
