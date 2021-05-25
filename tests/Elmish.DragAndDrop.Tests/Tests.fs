@@ -5,7 +5,7 @@ open Elmish
 open Expecto
 
 module ListTests =
-    open Elmish.DragAndDrop.Helpers.List
+    open Elmish.DragAndDropHelpers.List
 
     [<Tests>]
     let tests =
@@ -113,17 +113,17 @@ module ModelTests =
     ]
   ]
 
-  let model = Model.createWithItemsMultiList items
+  let model = DragAndDropModel.createWithItemsMultiList items
 
   [<Tests>]
   let tests = testList "Model tests" [
     testList "Sanity checks" [
       testCase "Model created with 0 items contains a single empty list" <| fun _ ->
-        let model = Model.createWithItems []
+        let model = DragAndDropModel.createWithItems []
         Expect.hasLength model.Items 1 "Should have a single list"
         Expect.hasLength (model.Items.[0]) 0 "Should have an empty list at 0th index"
       testCase "model created with multiple lists from an empty list is completely empty" <| fun _ ->
-        let model = Model.createWithItemsMultiList []
+        let model = DragAndDropModel.createWithItemsMultiList []
         Expect.hasLength model.Items 0 "Should not have any items"
       // testCase "initItemLocations does not map over an empty collection" <| fun _ ->
       //   let output = initItemLocations []
@@ -131,47 +131,47 @@ module ModelTests =
     ]
     testList "insertNewItem tests" [
       testCase "inserting new item to first spot of empty collection inserts that item" <| fun _ ->
-        let model = Model.createWithItems []
+        let model = DragAndDropModel.createWithItems []
         let item = "new-item"
-        let output = Model.insertNewItemAt 0 0 item model
+        let output = DragAndDropModel.insertNewItemAt 0 0 item model
         Expect.hasLength output.Items.[0] 1 "Should have insert item at 0th index"
         let (li, i, id) = output.Items.[0].[0]
         Expect.equal id item "Should have the correct item id"
       testCase "inserting new item to head of list of empty collection inserts that item" <| fun _ ->
-        let model = Model.createWithItems []
+        let model = DragAndDropModel.createWithItems []
         let item = "new-item"
-        let output = Model.insertNewItemAtHead 0 item model
+        let output = DragAndDropModel.insertNewItemAtHead 0 item model
         Expect.hasLength output.Items.[0] 1 "Should have insert item at 0th index"
         let (li, i, id) = output.Items.[0].[0]
         Expect.equal id item "Should have the correct item id"
 
       testCase "Inserting new item to non-existent list index creates a new list" <| fun _ ->
-        let model = Model.createWithItemsMultiList []
+        let model = DragAndDropModel.createWithItemsMultiList []
         let item = "new-item"
-        let output = Model.insertNewItemAt 1 0 item model
+        let output = DragAndDropModel.insertNewItemAt 1 0 item model
         Expect.hasLength output.Items.[0] 1 "Should have insert item at 0th index"
         let (li, i, id) = output.Items.[0].[0]
         Expect.equal id item "Should have the correct item id"
 
       testCase "inserting new item to head of list of populated collection inserts that item" <| fun _ ->
-        let model = Model.createWithItemsMultiList items
+        let model = DragAndDropModel.createWithItemsMultiList items
         let item = "new-item"
-        let output = Model.insertNewItemAtHead 0 item model
+        let output = DragAndDropModel.insertNewItemAtHead 0 item model
         Expect.hasLength output.Items.[0] 4 "Should have insert item at 0th index"
         let (li, i, id) = output.Items.[0].[0]
         Expect.equal id item "Should have the correct item id"
       testCase "inserting new item at middle of list inserts that item" <| fun _ ->
-        let model = Model.createWithItemsMultiList items
+        let model = DragAndDropModel.createWithItemsMultiList items
         let item = "new-item"
-        let output = Model.insertNewItemAt 0 2 item model
+        let output = DragAndDropModel.insertNewItemAt 0 2 item model
         let (li, i, id) = output.Items.[0].[2]
         Expect.equal id item "Should have the correct item id"
         let (_, _, id2) = output.Items.[0].[3]
         Expect.equal id2 "element-0-2" "Should have moved existing item to 3rd index"
       testCase "inserting new item middle list, middle of collection inserts that item" <| fun _ ->
-        let model = Model.createWithItemsMultiList items
+        let model = DragAndDropModel.createWithItemsMultiList items
         let item = "new-item"
-        let output = Model.insertNewItemAt 1 1 item model
+        let output = DragAndDropModel.insertNewItemAt 1 1 item model
         Expect.hasLength output.Items.[1] 4 "Should have 4 items"
         let (li, i, id) = output.Items.[1].[1]
         Expect.equal id item "Should have the correct item id"
@@ -180,47 +180,47 @@ module ModelTests =
     ]
     testList "removeItem tests" [
       testCase "Remove Item At on empty collection returns empty collection" <| fun _ ->
-        let model = Model.createWithItems []
-        let output = removeItemAt 0 0 model
+        let model = DragAndDropModel.createWithItems []
+        let output = DragAndDropModel.removeItemAt 0 0 model
         Expect.hasLength output.Items.[0] 0 "Should not have any items in collection"
       testCase "Remove Item returns empty collection when given empty collection" <| fun _ ->
-        let model = Model.createWithItems []
-        let output = removeItem "hello-world" model
+        let model = DragAndDropModel.createWithItems []
+        let output = DragAndDropModel.removeItem "hello-world" model
         Expect.hasLength output.Items.[0] 0 "Should not have any items in collection"
 
       testCase "Remove Item At removes item in middle of collection" <| fun _ ->
-        let model = Model.createWithItemsMultiList items
-        let output = removeItemAt 1 1 model
+        let model = DragAndDropModel.createWithItemsMultiList items
+        let output = DragAndDropModel.removeItemAt 1 1 model
         Expect.hasLength output.Items 3 "Should contain 3 lists of items"
         Expect.hasLength output.Items.[1] 2 "Should have 2 items in collection with item removed"
       testCase "Remove Item removes item by Id in the middle of a collection" <| fun _ ->
-        let model = Model.createWithItemsMultiList items
-        let output = removeItem "element-1-1" model
+        let model = DragAndDropModel.createWithItemsMultiList items
+        let output = DragAndDropModel.removeItem "element-1-1" model
         Expect.hasLength output.Items 3 "Should contain 3 lists of items"
         Expect.hasLength output.Items.[1] 2 "Should have 2 items in collection with item removed"
 
       testCase "Remove Item At returns collection if target is outside collection range" <| fun _ ->
-        let model = Model.createWithItemsMultiList items
-        let output = removeItemAt 3 1 model
+        let model = DragAndDropModel.createWithItemsMultiList items
+        let output = DragAndDropModel.removeItemAt 3 1 model
         Expect.hasLength model.Items 3 "Should contain 3 lists of items"
         for li in output.Items do
           Expect.hasLength li 3 "List should not have any items removed"
       testCase "Remove Item returns collection if target id is not in the collection" <| fun _ ->
-        let model = Model.createWithItemsMultiList items
-        let output = removeItem "hello-world" model
+        let model = DragAndDropModel.createWithItemsMultiList items
+        let output = DragAndDropModel.removeItem "hello-world" model
         Expect.hasLength model.Items 3 "Should contain 3 lists of items"
         for li in output.Items do
           Expect.hasLength li 3 "List should not have any items removed"
     ]
     testList "Replace Item tests" [
       testCase "replacing item in empty collection simply inserts that item" <| fun _ ->
-        let model = Model.createWithItemsMultiList []
-        let output = replaceItemAt 0 1 "new-item" model
+        let model = DragAndDropModel.createWithItemsMultiList []
+        let output = DragAndDropModel.replaceItemAt 0 1 "new-item" model
         Expect.hasLength output.Items 1 "Should create a list"
         Expect.hasLength output.Items.[0] 1 "Should insert the item"
       testCase "replacing item in collection replaces that item" <| fun _ -> 
-        let model = Model.createWithItemsMultiList items
-        let output = replaceItemAt 1 1 "new-item" model
+        let model = DragAndDropModel.createWithItemsMultiList items
+        let output = DragAndDropModel.replaceItemAt 1 1 "new-item" model
         Expect.hasLength output.Items 3 "Should contain 3 lists of items"
         Expect.hasLength output.Items.[1] 3 "Should have 2 items in collection with item removed"
         Expect.equal output.Items.[1].[1] (1, 1, "new-item") "Should replace item at correct index"

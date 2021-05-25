@@ -63,19 +63,23 @@ module SingleListDemo =
       ]
   }
 
-  let createGenerator model elementId =
+  let createDragHandle model elementId rootElementId dispatch =
     let element =
       Map.tryFind elementId model.ContentMap
       |> Option.defaultValue (div [] [])
-    ElementGenerator.Create elementId [ Cursor "grab" ] [ ClassName "content" ] [element]
-    // A DragHandle can either be rendered "early" as part of an element (see the Handles example)
-    // or can be Deferred to render later if it's the root element by which the DropArea will render content
-    |> DragHandle.Deferred
+    let handleId = elementId + "-handle"
+    ElementGenerator.Create handleId [ Cursor "grab" ] [] [element]
+    |> DragHandle.dragHandle model.DragAndDrop elementId dispatch
+
+  let createDraggable model elementId dispatch =
+    let rootId = elementId // making these equal makes the whole thing draggable
+    let handle = createDragHandle model elementId rootId dispatch
+    ElementGenerator.Create rootId [] [ ClassName "content" ] [ handle ]
+    |> Draggable.draggable model.DragAndDrop dragAndDropConfig dispatch
 
   let view model (dispatch : Msg -> unit) =
     let dispatch = (mappedMsg >> dispatch)
     let dropAreaProps = [ 
-      //(ClassName "container") :> IHTMLProp 
       Style [
         Background "#33adff"
         Display DisplayOptions.Table
@@ -91,10 +95,9 @@ module SingleListDemo =
       |> List.map(fun li ->
         li
         |> List.map (fun id ->
-          let content = createGenerator model id
-          id, content
+          createDraggable model id dispatch
         )
-        |> DropArea.fromDragHandles model.DragAndDrop dispatch dragAndDropConfig dropAreaProps
+        |> DropArea.fromDraggables div dropAreaProps
       )
     let props : IHTMLProp list = [ 
       ClassName "wrapper"

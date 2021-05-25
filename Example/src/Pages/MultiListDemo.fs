@@ -65,27 +65,47 @@ module MultiListDemo =
       ]
   }
 
-  let createGenerator model elementId =
+  let createDraggable model elementId dispatch =
     let element =
       Map.tryFind elementId model.ContentMap
       |> Option.defaultValue (div [] [])
-    ElementGenerator.Create elementId [ Cursor "grab" ] [ ClassName "content" ] [element]
-    |> DragHandle.Deferred
+    ElementGenerator.Create elementId [ Cursor "grab" ] [ ClassName "content" ] [ element ]
+    |> Draggable.asDragHandle model.DragAndDrop dragAndDropConfig dispatch
 
   let view model (dispatch : Msg -> unit) =
     let dispatch = mappedMsg >> dispatch
-    let dropAreaProps = [ (ClassName "container") :> IHTMLProp ]
+    let leftDropAreaProps : IHTMLProp list = [
+      Style [
+        MarginLeft "auto"
+        Display DisplayOptions.Table
+        Background "#33adff"
+      ]
+    ]
+    let rightDropAreaProps : IHTMLProp list = [
+      Style [
+        MarginRight "auto"
+        Display DisplayOptions.Table
+        Background "#3300aa"
+      ]
+    ]
     let dropAreaContent =
       model.DragAndDrop.ElementIds()
-      |> List.map(fun li ->
+      |> List.mapi(fun index li ->
+        let props = if index % 2 = 0 then leftDropAreaProps else rightDropAreaProps
         li
         |> List.map (fun id ->
-          let content = createGenerator model id
-          id, content
+          createDraggable model id dispatch
         )
-        |> DropArea.fromDragHandles model.DragAndDrop dispatch dragAndDropConfig dropAreaProps
+        |> DropArea.fromDraggables div props
       )
-    DragDropContext.context model.DragAndDrop dispatch div [ ClassName "wrapper" ] dropAreaContent
+    let contextProps : IHTMLProp list = [
+      Style [
+        Background "#0066ff"
+        Width "100%"
+        Display DisplayOptions.Flex
+      ]
+    ]
+    DragDropContext.context model.DragAndDrop dispatch div contextProps dropAreaContent
 
   let update msg model =
     match msg with
