@@ -1,5 +1,9 @@
 namespace Pages
 
+
+// TODO
+// I think this is just me and my lack of CSS knowledge
+
 module HorizontalDemo =
   open Fable.React
   open Fable.React.Props

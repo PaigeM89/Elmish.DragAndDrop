@@ -63,7 +63,7 @@ module SingleListDemo =
       ]
   }
 
-  let createDragHandle model elementId rootElementId dispatch =
+  let createDragHandle model elementId dispatch =
     let element =
       Map.tryFind elementId model.ContentMap
       |> Option.defaultValue (div [] [])
@@ -72,9 +72,8 @@ module SingleListDemo =
     |> DragHandle.dragHandle model.DragAndDrop elementId dispatch
 
   let createDraggable model elementId dispatch =
-    let rootId = elementId // making these equal makes the whole thing draggable
-    let handle = createDragHandle model elementId rootId dispatch
-    ElementGenerator.Create rootId [] [ ClassName "content" ] [ handle ]
+    let handle = createDragHandle model elementId dispatch
+    ElementGenerator.Create elementId [] [ ClassName "content" ] [ handle ]
     |> Draggable.draggable model.DragAndDrop dragAndDropConfig dispatch
 
   let view model (dispatch : Msg -> unit) =
