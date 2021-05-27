@@ -228,8 +228,40 @@ module DragAndDrop =
             | None -> ()
       )
 
+    let hoverListenerWithFunc model id dispatch func throttleTimeSpan =
+      OnMouseEnter (fun (ev : MouseEvent) ->
+        ev.preventDefault()
+        match throttleTimeSpan with
+        | Some timespan ->
+            let isThrottled = throttle model.ThrottleState id timespan ev
+            match isThrottled with
+            | None -> ()
+            | Some (ev, throttleMsg) ->
+                throttleMsg |> ThrottleMsg |> dispatch
+                func ev id
+                let loc = getLocationForElement id model
+                match loc with
+                | Some loc ->
+                    DragOver loc |> dispatch
+                | None -> ()
+        | None ->
+            func ev id
+            let loc = getLocationForElement id model
+            match loc with
+            | Some loc ->
+                DragOver loc |> dispatch
+            | None -> ()
+      )
+
     let defaultReleaseListener dispatch =
       OnMouseUp (fun (ev : MouseEvent) -> ev.preventDefault(); DragEnd |> dispatch)
+
+    let releaseListenerWithFunc func elementId dispatch =
+      OnMouseUp (fun (ev : MouseEvent) -> 
+        ev.preventDefault()
+        func ev elementId
+        DragEnd |> dispatch
+      )
 
   type DragAndDropConfig = {
     /// CSS Styles applied to the currently dragged element.
@@ -250,7 +282,8 @@ module DragAndDrop =
     /// HTML Properties applied to the elements listening for a hover event.
     /// During a drag, this is all elements.
     ListenerElementProperties : IHTMLProp list option
-
+    /// Throttle for elements moving to accomodate a dropped element. 
+    /// This won't prevent the first move, only subsequent moves.
     MoveThrottleTimeMs : System.TimeSpan option
   } with
     static member Empty() = {
@@ -474,6 +507,19 @@ module DragAndDrop =
     static member fromDraggables tag props (draggables : Draggable list) =
       let content = draggables |> List.map (fun x -> x.Generators |> List.map (fun g -> g.Render())) |> List.concat
       tag props content
+
+    /// Creates a `DropArea` that accepts `Draggables` but does not display them. It exposes `onHover` and `onDrop` 
+    /// functions to handle draggables being moved or dropped in this area.
+    static member asBucket model (config : DragAndDropConfig) onHover onDrop dispatch (gen : ElementGenerator) =
+      match model.Moving with
+      | None -> gen.Render()
+      | Some { StartLocation = (_, _, draggedElementId ) } ->
+        let props : IHTMLProp list = [
+          Listeners.hoverListenerWithFunc model draggedElementId dispatch onHover config.MoveThrottleTimeMs
+          Listeners.releaseListenerWithFunc onDrop draggedElementId dispatch
+        ]
+        gen |> ElementGenerator.addProps props |> ElementGenerator.render
+
 
   // ************************************************************************************
   // DRAG AND DROP CONTEXT

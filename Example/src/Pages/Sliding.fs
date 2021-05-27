@@ -1,5 +1,10 @@
 namespace Pages
 
+(*
+  TODO:
+  Get sliding to work, making it configurable
+  Pull requests welcome :)
+*)
 
 module Sliding =
   module React = 
