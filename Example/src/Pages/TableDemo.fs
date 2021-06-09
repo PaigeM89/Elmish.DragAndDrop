@@ -49,6 +49,7 @@ module TableDemo =
   | Init
   | InitWithSampleData
   | DndMsg of DragAndDropMsg
+  | Checkbox of contentId : Guid * status : bool
   | AddRow
   | DeleteRow of rowId : Guid
 
@@ -100,10 +101,11 @@ module TableDemo =
           ]
           td [] [
             input [
-              InputMode "checkbox"
+              Type "checkbox"
               Checked cv.IsChecked
-              OnChange (fun ev -> ())
+              OnChange (fun ev -> (cv.ContentId, ev.Checked) |> Checkbox |> dispatch)
             ]
+            label [] [ str "Checkbox label" ]
           ]
           td [] [
             button [
@@ -223,3 +225,12 @@ module TableDemo =
     | DeleteRow rowId ->
       let model = removeContent model rowId
       model, Cmd.none
+    | Checkbox(contentId, status) ->
+      let contentIdStr = string contentId
+      match Map.tryFind contentIdStr model.ContentMap with
+      | Some content ->
+        let content = { content with IsChecked = status }
+        let m = Map.add contentIdStr content model.ContentMap
+        { model with ContentMap = m }, Cmd.none
+      | None ->
+        model, Cmd.none

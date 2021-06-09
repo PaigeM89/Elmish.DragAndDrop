@@ -88,6 +88,12 @@ See the Examples folder for complete, working examples of different types of set
 
 This is a building block used to specify all the ingredients of a `ReactElement`, so that additional styles or properties can be added as needed before it is turned into an element.
 
+### Drop Areas As Buckets
+
+Sometimes you want a drop area that accepts an item and invokes a function, but doesn't keep the item around. An example of this might be dragging an item to delete it, or dragging an item over some element to create some event (perhaps creating a new element in the process). To do this, use `DropArea.asBucket`, which accepts a function for `onHover` and `onDrop`, and will invoke those functions during a hover and a drop.
+
+See the "Drag To Delete" example to see this in action.
+
 ## Contributions & Todos
 
 Heavily inspired by / shamelessly copied off of [dnd-list for Elm](https://annaghi.github.io/dnd-list/introduction/basic), this implements drag-and-drop sorting functionality for the Elmish architecture in Fable.
