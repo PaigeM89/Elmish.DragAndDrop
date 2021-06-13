@@ -83,7 +83,6 @@ With all that, you're good to go! There's a fair bit of setup, which arises from
 
 See the Examples folder for complete, working examples of different types of setups.
 
-
 ### Element Generators
 
 This is a building block used to specify all the ingredients of a `ReactElement`, so that additional styles or properties can be added as needed before it is turned into an element.
@@ -101,12 +100,14 @@ Heavily inspired by / shamelessly copied off of [dnd-list for Elm](https://annag
 Features in progress/TODO:
 * Sliding animations
 * Full documentation
+  * Add examples to documentation
 * More examples
   * Horizontal demo
   * Grid demo
   * Sliding demo
 * Allow a callback to be used to filter eligible drop areas or drop locations
 * Fix a bug with multi-list inserting where inserting to the bottom of a list requires inserting into the middle first. This will probably require a ghost last element to hover over, which should disappear. If this approach is used, that element will need to dynamically take up the rest of the space in that list.
+  * Note that this bug means that empty categories can't be dropped into.
 * Fix bug with flickering on large items as they slide back & forth from a spot (this is mitigated by throttling)
 * Use location finding & offset calculations to place a dragged item under the cursor at the spot it was clicked; right now, all dragged items appear in the same spot under the cursor, regardless of where the user clicked on that item.
 * Fix bug where "grabbing" cursor never appears, though "grab" does.

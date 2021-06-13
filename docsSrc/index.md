@@ -4,11 +4,11 @@
 
 ## What is Elmish.DragAndDrop?
 
-Elmish.DragAndDrop is a library that does this specific thing.  
+Elmish.DragAndDrop is a drag-and-drop framework designed to plug into an Elmish architecture in Fable. This library is for the common feature of viewing & sorting items in a drag & drop functionality, not the more generic case of simply dragging & dropping things on a canvas.
 
 ## Why use Elmish.DragAndDrop?
 
-I created it because I had to solve an issue with this other thing.
+Using Elmish.DragAndDrop is _relatively_ simple, considering the complexity of the space, and is designed to be flexible and make as few assumptions about your data and use case as possible.
 
 ---
 
