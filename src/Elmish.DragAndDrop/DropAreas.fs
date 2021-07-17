@@ -11,25 +11,6 @@ open Elmish.DragAndDrop2
 [<AutoOpen>]
 module DropAreas =
 
-  type OnHoverEnter = Browser.Types.MouseEvent -> DraggableId -> Throttle.Id -> unit
-  type OnHoverLeave = Browser.Types.MouseEvent -> DraggableId -> Throttle.Id -> unit
-  type OnDrop  = Browser.Types.MouseEvent -> DraggableId -> unit
-
-  type MouseEventHandlers = {
-    OnHoverEnter : OnHoverEnter option
-    OnHoverLeave : OnHoverLeave option
-    OnDrop : OnDrop option
-  } with
-    static member Empty() = {
-      OnHoverEnter = None
-      OnHoverLeave = None
-      OnDrop = None
-    }
-
-    member this.GetOnHoverEnter() = this.OnHoverEnter |> Option.defaultValue (fun _ _ _ -> ())
-    member this.GetOnHoverLeave() = this.OnHoverLeave |> Option.defaultValue (fun _ _ _ -> ())
-    member this.GetOnDrop() = this.OnDrop |> Option.defaultValue (fun _ _ -> ())
-
   let drawPlaceholder { Styles = styles; Props = props; Content = content } =
     let handle = Draggable.SelfHandle 
     []
@@ -40,9 +21,11 @@ module DropAreas =
       | None ->
         tag props content
       | Some { StartLocation = (_, _, draggedElementId ) } ->
-        let hoverFunc ev throttleId = (mouseFuncs.GetOnHoverEnter()) ev draggedElementId throttleId
+        let hoverFunc : MouseEventWithThrottle =
+          fun ev throttleId ->
+            mouseFuncs.GetOnHoverEnter() ev draggedElementId throttleId
         let listeners  : IHTMLProp list = [
-          Listeners.nonDraggableHoverListenerWithFunc model id dispatch (fun _ _ -> ()) config.MoveThrottleTimeMs
+          Listeners.nonDraggableHoverListenerWithFunc model id dispatch hoverFunc config.MoveThrottleTimeMs
           Listeners.releaseListenerWithFunc (mouseFuncs.GetOnDrop()) draggedElementId dispatch
         ]
         let props = props @ listeners

@@ -5,7 +5,7 @@ open System
 (*
   This demo shows how to create a drag-and-drop setup with table rows.
 
-  TODO: Fix the numeric & text input boxes
+  TODO: Fix this demo. The preview sort of works but the rest of the demo does not.
 *)
 
 module TableDemo =
@@ -13,6 +13,11 @@ module TableDemo =
   open Fable.React.Props
   open Elmish
   open Elmish.DragAndDrop2
+
+  let parseIntOrZero str =
+    match Int32.TryParse str with
+    | true, i -> i
+    | false, _ -> 0
 
   type ContentValue = {
     ContentId : Guid
@@ -39,10 +44,10 @@ module TableDemo =
 
   let initWithSampleData() =
     let data = [
-      { ContentValue.Empty() with SomeInt = 1; SomeString = "hello world"; IsChecked = true}
-      { ContentValue.Empty() with SomeInt = 3; SomeString = "foo"; IsChecked = true}
-      { ContentValue.Empty() with SomeInt = 5; SomeString = "bar"; IsChecked = false}
-      { ContentValue.Empty() with SomeInt = 7; SomeString = "bax"; IsChecked = false}
+      { ContentValue.Empty() with SomeInt = 1; SomeString = "This demo is currently broken"; IsChecked = true }
+      { ContentValue.Empty() with SomeInt = 3; SomeString = "The rows don't actually move when you drag them."; IsChecked = true }
+      { ContentValue.Empty() with SomeInt = 5; SomeString = "No idea what's wrong."; IsChecked = false }
+      { ContentValue.Empty() with SomeInt = 7; SomeString = "Contributions welcome! :)"; IsChecked = false }
     ]
     let dnd = DragAndDropModel.createWithItems (data |> List.map (fun x -> x.ContentId |> string))
     let m = data |> List.map(fun x -> (string x.ContentId), x) |> Map.ofList
@@ -56,6 +61,8 @@ module TableDemo =
   | InitWithSampleData
   | DndMsg of DragAndDropMsg
   | Checkbox of contentId : Guid * status : bool
+  | NumericInputChange of value : int * rowId : Guid
+  | TextInputChange of value: string * rowId : Guid
   | AddRow
   | DeleteRow of rowId : Guid
 
@@ -78,18 +85,12 @@ module TableDemo =
 
   module View =
 
-    let numericInput value =
-      input [
-        DefaultValue value
-        OnChange (fun ev -> ())
-      ]
-
     let createTableRow model dispatch index (cv : ContentValue)=
       let rowId = cv.ContentId |> string
       let handleStyles = if model.DragAndDrop.Moving.IsSome then [] else [ Cursor "grab" ]
 
       // note that the content is the whole collection of table cells, without any wrapping tag.
-      let content = [
+      [
           td [] [
             DragHandle.Handle
               model.DragAndDrop
@@ -102,12 +103,16 @@ module TableDemo =
               ]
           ]
           td [] [
-            numericInput cv.SomeInt
+            input [
+              HTMLAttr.Type "numeric"
+              DefaultValue cv.SomeInt
+              OnChange (fun ev -> ev.Value |> parseIntOrZero |> (fun n -> NumericInputChange (n, cv.ContentId) |> dispatch))
+            ]
           ]
           td [] [
             input [
               DefaultValue cv.SomeString
-              OnChange (fun ev -> ())
+              OnChange (fun ev -> TextInputChange (ev.Value, cv.ContentId) |> dispatch)
             ]
           ]
           td [] [
@@ -126,7 +131,7 @@ module TableDemo =
             ]
           ]
       ]
-      Draggable.InnerHandle
+      |> Draggable.InnerHandle
         model.DragAndDrop
         dragAndDropConfig
         (dndMsg >> dispatch)
@@ -134,7 +139,6 @@ module TableDemo =
         tr
         []
         [ Id rowId ]
-        content
 
     let addRowButton dispatch = 
       button [
@@ -177,8 +181,7 @@ module TableDemo =
         ]
 
       let rows =
-        model.DragAndDrop.ElementIds()
-        |> List.tryHead |> Option.defaultValue []
+        model.DragAndDrop.ElementIdsSingleList()
         |> List.mapi (fun index id ->
           let cv = model.ContentMap |> Map.find id
           createTableRow model dispatch index cv
@@ -258,3 +261,16 @@ module TableDemo =
         { model with ContentMap = m }, Cmd.none
       | None ->
         model, Cmd.none
+    | NumericInputChange(value, rowId) ->
+      printfn "Numeric input changed to value %A for row %A" value rowId
+      match Map.tryFind (string rowId) model.ContentMap with
+      | Some content ->
+        let cm = model.ContentMap |> Map.add (string rowId) { content with SomeInt = value }
+        { model with ContentMap = cm }, Cmd.none
+      | None -> model, Cmd.none
+    | TextInputChange(value, rowId) ->
+      match Map.tryFind (string rowId) model.ContentMap with
+      | Some content ->
+        let cm = model.ContentMap |> Map.add (string rowId) { content with SomeString = value }
+        { model with ContentMap = cm }, Cmd.none
+      | None -> model, Cmd.none

@@ -237,3 +237,22 @@ module Types =
       Placeholder = None
       MoveThrottleTimeMs = None
     }
+
+  type OnHoverEnter = Browser.Types.MouseEvent -> DraggableId -> Throttle.Id -> unit
+  type OnHoverLeave = Browser.Types.MouseEvent -> DraggableId -> Throttle.Id -> unit
+  type OnDrop  = Browser.Types.MouseEvent -> DraggableId -> unit
+
+  type MouseEventHandlers = {
+    OnHoverEnter : OnHoverEnter option
+    OnHoverLeave : OnHoverLeave option
+    OnDrop : OnDrop option
+  } with
+    static member Empty() = {
+      OnHoverEnter = None
+      OnHoverLeave = None
+      OnDrop = None
+    }
+
+    member this.GetOnHoverEnter() = this.OnHoverEnter |> Option.defaultValue (fun _ _ _ -> ())
+    member this.GetOnHoverLeave() = this.OnHoverLeave |> Option.defaultValue (fun _ _ _ -> ())
+    member this.GetOnDrop() = this.OnDrop |> Option.defaultValue (fun _ _ -> ())

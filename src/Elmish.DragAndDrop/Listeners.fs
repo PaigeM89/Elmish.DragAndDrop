@@ -136,7 +136,6 @@ module internal Listeners =
           | None -> ()
           | Some (ev, throttleMsg) ->
               throttleMsg |> ThrottleMsg |> dispatch
-              func ev id
               let loc = getLocationForElement id model
               match loc with
               | Some (listIndex, _, _) ->
