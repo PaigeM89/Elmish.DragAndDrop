@@ -12,6 +12,7 @@ type Page =
 | TableDemo of model : Pages.TableDemo.Model
 | DropToDeleteDemo of model : Pages.DropToDeleteDemo.Model
 | MultipleDragTypesDemo of model : Pages.MultipleDragTypesDemo.Model
+| MultipleModelsDemo of model : Pages.MultipleModelsDemo.Model
 // | HorizontalDemo of model : Pages.HorizontalDemo.Model
 
 
@@ -31,12 +32,14 @@ type Msg =
 | TableDemoMsg of Pages.TableDemo.Msg
 | DropToDeleteDemoMsg of Pages.DropToDeleteDemo.Msg
 | MultipleDragtypesDemoMsg of Pages.MultipleDragTypesDemo.Msg
+| MultipleModelsDemoMsg of Pages.MultipleModelsDemo.Msg
 | ToSingleListDemo
 | ToMultiListDemo
 | ToHandlesDemo
 | ToTableDemo
 | ToDropToDeleteDemo
 | ToMultipleDragTypesDemo
+| ToMultipleModelsDemo
 // | ToHorizontalDemo
 
 let view model (dispatch : Msg -> unit) =
@@ -49,6 +52,7 @@ let view model (dispatch : Msg -> unit) =
             yield button [ OnClick (fun _ -> ToTableDemo |> dispatch)] [ str "Table Demo" ]
             yield button [ OnClick (fun _ -> ToDropToDeleteDemo |> dispatch)] [ str "Drop To Delete Demo" ]
             yield button [ OnClick (fun _ -> ToMultipleDragTypesDemo |> dispatch)] [ str "Multiple Drag Types Demo" ]
+            yield button [ OnClick (fun _ -> ToMultipleModelsDemo |> dispatch )] [ str "Multiple Drag And Drop Models Demo" ]
             // yield button [ OnClick (fun _ ->  ToHorizontalDemo |> dispatch)] [ str "Horizontal Demo"]
         ]
         match model.Page with
@@ -58,6 +62,7 @@ let view model (dispatch : Msg -> unit) =
         | TableDemo dnd -> yield Pages.TableDemo.View.view dnd (fun x -> x |> TableDemoMsg |> dispatch )
         | DropToDeleteDemo dnd -> yield Pages.DropToDeleteDemo.view dnd (fun x -> x |> DropToDeleteDemoMsg |> dispatch )
         | MultipleDragTypesDemo dnd -> yield Pages.MultipleDragTypesDemo.view dnd (MultipleDragtypesDemoMsg >> dispatch)
+        | MultipleModelsDemo dnd -> yield Pages.MultipleModelsDemo.view dnd (MultipleModelsDemoMsg >> dispatch)
         // | HorizontalDemo dnd -> yield Pages.HorizontalDemo.view dnd (fun x -> x |> HorizontalDemoMsg |> dispatch )
     ]
 
@@ -100,6 +105,12 @@ let update msg model =
     | ToMultipleDragTypesDemo, _ ->
       let mdl = Pages.MultipleDragTypesDemo.Model.Init()
       { Page = MultipleDragTypesDemo mdl }, Cmd.ofMsg (MultipleDragtypesDemoMsg Pages.MultipleDragTypesDemo.Init)
+    | MultipleModelsDemoMsg msg, MultipleModelsDemo mdl ->
+      let mdl, cmd = Pages.MultipleModelsDemo.update msg mdl
+      { Page = MultipleModelsDemo mdl }, Cmd.map (MultipleModelsDemoMsg) cmd
+    | ToMultipleModelsDemo, _ ->
+      let mdl = Pages.MultipleModelsDemo.Model.Init()
+      { Page = MultipleModelsDemo mdl }, Cmd.ofMsg (MultipleModelsDemoMsg Pages.MultipleModelsDemo.Init)
     // | ToHorizontalDemo, _ ->
     //     let mdl = Pages.HorizontalDemo.init()
     //     { Page = HorizontalDemo mdl}, Cmd.ofMsg (HorizontalDemoMsg Pages.HorizontalDemo.Init)

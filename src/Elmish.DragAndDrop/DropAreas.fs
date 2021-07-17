@@ -58,6 +58,18 @@ module DropAreas =
         ]
         tag props content
 
+    static member MultipleModels (models : DragAndDropModel list) dispatch (tag : Tag) (props : Props) content =
+      let anyMoving = models |> List.exists (fun m -> m.Moving.IsSome)
+      if anyMoving then
+        let props = [
+          yield! props
+          Listeners.defaultReleaseListener dispatch
+          Listeners.defaultMouseMoveListener dispatch
+        ]
+        tag props content
+      else
+        tag props content
+
   // ************************************************************************************
   // UPDATE
   // ************************************************************************************
@@ -119,7 +131,7 @@ module DropAreas =
           JS.console.error("Unreachable state: cannot find list at index", insertListIndex)
           li
   
-  let dragAndDropUpdate msg model =
+  let dragAndDropUpdate msg (model : DragAndDropModel) =
     match msg with
     | DragStart (loc, startCoords, offset) ->
       let movingStatus = MovingStatus.Init (loc) |> Some
@@ -157,3 +169,42 @@ module DropAreas =
           //printfn "Error throttling: %A" e
           Fable.Core.JS.console.error("Error throttling: ", e)
           model, Cmd.none
+
+  // let dragAndDropMultipleModelsUpdate msg (models : DragAndDropModel list) =
+  //   match msg with
+  //   | DragStart (loc, startCoords, offset) ->
+  //     let movingStatus = MovingStatus.Init (loc) |> Some
+  //     { model with Moving = movingStatus; Cursor = startCoords; Offset = Some offset }, Cmd.none
+  //   | DragAndDropMsg.OnDrag coords ->
+  //     {model with Cursor = coords }, Cmd.none
+  //   | DragOver (listIndex, index, elementId) ->
+  //     match model.Moving with
+  //     | Some { StartLocation = (startList, startIndex, startingElementId) }->
+  //       let slide = None //tryGetSlide elementId
+  //       let items' =
+  //         ItemMoving.moveItem (startList, startIndex) (listIndex, index) model.Items
+  //         |> getUpdatedItemLocations
+  //       let mdl = { model with Items = items' } // |> Model.setSlideOpt slide
+  //       let newStartLoc = (listIndex, index, startingElementId)
+  //       (setDragSource newStartLoc mdl), Cmd.none
+  //     | None ->
+  //       model, Cmd.none
+
+  //   | DragOverNonDraggable (listIndex, dropAreaId) ->
+  //     printfn "Drag Over Non Draggable raised for %A" (listIndex, dropAreaId)
+  //     model, Cmd.none
+
+  //   | DragEnd ->
+  //     { model with Moving = None; Offset = None }, Cmd.none
+  //   | ThrottleMsg throttleMsg ->
+  //     // let the throttler handle the message
+  //     let throttleResult = handleThrottleMsg throttleMsg model.ThrottleState
+  //     match throttleResult with
+  //     // get back a new state and a command 
+  //     | Ok (throttleState, throttleCmd) ->
+  //         // map the command so it's run
+  //         { model with ThrottleState = throttleState }, Cmd.map ThrottleMsg throttleCmd
+  //     | Error e ->
+  //         //printfn "Error throttling: %A" e
+  //         Fable.Core.JS.console.error("Error throttling: ", e)
+  //         model, Cmd.none

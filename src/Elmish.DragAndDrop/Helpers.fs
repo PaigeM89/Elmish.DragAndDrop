@@ -111,6 +111,7 @@ module HelperTypes =
         static member Init loc =
           { Slide = None; StartLocation = loc; CurrentDropArea = Some (locListIndex loc, None) }
 
+
 module BrowserHelpers =
   open HelperTypes
 

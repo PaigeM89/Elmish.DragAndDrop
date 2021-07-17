@@ -78,6 +78,20 @@ This is also probably going to be how we solve the "insert at the bottom" issue.
 
 The place where things actually go when released (sorted).
 
+## Context
+
+The Drag And Drop Context is bound to a specific model, meaning multiple dnd models isn't really supported. This needs to change, but how?
+
+We tie in 2 listeners: 
+1. `defaultReleaseListener`, listener for `onMouseUp` that dispatches `DragEnd`
+2. `defaultMouseMoveListener`, listener for `onMouseMove`, that dispatches the mouse coordinates.
+
+Neither of these are tied to a model. We _only_ care if a drag is in progress, which we check via the model.
+
+I think the model needs to change to be more accomodating to multiple categories? Can I make it generic? Should I? It can only be generic across N specifically defined types, so no, that doesn't really help, does it. Not unless the pattern is to define distinct draggable categores in a DU.
+
+Maybe the `DragDropContext` needs to accept a list of `DragAndDropModel` instances?
+
 # Element Gen vs. Other Record vs. HTML-style Props vs. huge funcs
 
 Element gen is very clunky to use and has no synergy with other stuff, and can often encourage or require  additional nesting.

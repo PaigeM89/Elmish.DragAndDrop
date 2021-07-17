@@ -11,6 +11,32 @@ open Fable.React.Props
 module Types =
   type Tag = IHTMLProp seq -> ReactElement seq -> ReactElement
   type StyledTag = CSSProp seq -> Tag
+  type Props = IHTMLProp seq
+
+  type DragAndDropGeneric<'a when 'a :comparison> = {
+    Cursor : Coords
+    Moving: MovingStatus option
+    Offset : Coords option
+    Items: Map<'a, ItemLocation list list>
+    ThrottleState : Map<string, Throttle.Status>
+  } with
+      member this.ElementIds() =
+        this.Items
+        |> Map.toList
+        |> List.map(fun (a, li) -> a, li |> List.map (fun li2 -> li2 |> List.map (fun (_, _, id) -> id)))
+      
+      member this.ElementIdsSingleList() =
+        this.Items
+        |> Map.toList
+        |> List.map(fun (a, li) -> a, li |> List.collect(fun li2 -> li2 |> List.map (fun (_, _, id) -> id)))
+      
+      static member Empty<'a>() = {
+        Cursor = { x = 0.; y = 0. }
+        Moving = None
+        Offset = None
+        Items = Map.empty
+        ThrottleState = Map.empty
+      }
 
   type DragAndDropModel = {
     /// The cursor's current coordinates, updated when dragging to draw the ghost.
@@ -188,6 +214,17 @@ module Types =
     |> List.map (fun li -> li |> List.tryFind (fun (_, _, id) -> id = itemId))
     |> List.choose id
     |> List.tryHead
+
+  let internal getLocationForElementGeneric<'a when 'a : comparison> key itemId (model : DragAndDropGeneric<'a>) =
+    let maybeItems = 
+      model.Items
+      |> Map.tryFind key
+    match maybeItems with
+    | Some items ->
+      items
+      |> List.choose (fun li -> li |> List.tryFind (fun (_, _, id) -> id = itemId))
+      |> List.tryHead
+    | None -> None
 
   /// The Id of the throttle
   type MouseEventWithThrottle = Browser.Types.MouseEvent -> Throttle.Id -> unit

@@ -14,6 +14,7 @@
     <Compile Include="Pages/TableDemo.fs" />
     <Compile Include="Pages/DropToDeleteDemo.fs" />
     <Compile Include="Pages/MultipleDragTypes.fs" />
+    <Compile Include="Pages/MultipleModelsDemo.fs" />
     <Compile Include="App.fs" />
   </ItemGroup>
   <ItemGroup>

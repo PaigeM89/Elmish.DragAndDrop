@@ -114,5 +114,15 @@ module Draggables =
     //       let props = (config.ListenerElementProperties |> orEmpty) @ props @ [ listener ]
     //       [tag (styles :: props) content]
 
-    static member Placeholder model config dispatch id (tag : Tag) styles props content =
-      ()
+    // static member Placeholder model config dispatch id listIndex index (tag : Tag) styles props content =
+    //   match model.Moving with
+    //   | None ->
+    //     // no drag, render the placeholder
+    //     // note that we don't add any listeners.
+    //     [ tag props content ]
+    //   | Some { StartLocation = ( startListIndex, startIndex, draggedElementId )} ->
+    //     if listIndex = startListIndex && index = startIndex then
+    //       []
+    //     else
+    //       let listener = Listeners.defaultHoverListener model id dispatch config.MoveThrottleTimeMs :> IHTMLProp
+          

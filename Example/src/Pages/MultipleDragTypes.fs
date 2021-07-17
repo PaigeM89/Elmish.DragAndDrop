@@ -3,8 +3,6 @@ namespace Pages
 (*
   This demo shows how to create not just multiple drag & drop categories (which is already shown in the
   MultiList Demo), but how to prevent elements from crossing into another category or another drop bucket.
-
-  This demo also shows how to take things from an un-sortable category and drag them to a sortable one.
 *)
 
 open System
@@ -13,7 +11,7 @@ module MultipleDragTypesDemo =
   open Fable.React
   open Fable.React.Props
   open Elmish
-  open Elmish.DragAndDrop
+  open Elmish.DragAndDrop2
 
   let tryParseGuid str = 
     match Guid.TryParse str with
@@ -49,14 +47,6 @@ module MultipleDragTypesDemo =
       Name = name
     }
 
-  // [<RequireQualifiedAccess>]
-  // type Category =
-  // | Pool
-  // | Band
-  // | Food
-  // | Movie
-  // | General
-
   [<RequireQualifiedAccess>]
   type Thing =
   | Movie of Movie
@@ -68,41 +58,6 @@ module MultipleDragTypesDemo =
       | Movie m -> m.Id
       | Band b -> b.Id
       | Food f -> f.Id
-
-  // type GroupedThings = {
-  //   Ungrouped : Thing list
-  //   FavoriteBands : Band list
-  //   FavoriteFoods : Food list
-  //   FavoriteMovies : Movie list
-  //   TopFavorites : Thing list
-  // } with
-  //   static member Empty() = {
-  //     Ungrouped = []
-  //     FavoriteBands = []
-  //     FavoriteFoods = []
-  //     FavoriteMovies = []
-  //     TopFavorites = []
-  //   }
-  //   static member Create ungrouped bands foods movies top = {
-  //     Ungrouped = ungrouped
-  //     FavoriteBands = bands
-  //     FavoriteFoods = foods
-  //     FavoriteMovies = movies
-  //     TopFavorites = top
-  //   }
-  //   static member UngroupedThings ug = { GroupedThings.Empty() with Ungrouped = ug }
-  //   static member Bands b = { GroupedThings.Empty() with FavoriteBands = b }
-  //   static member Foods f = { GroupedThings.Empty() with FavoriteFoods = f }
-  //   static member Movies m = { GroupedThings.Empty() with FavoriteMovies = m }
-  //   static member Top t = { GroupedThings.Empty() with TopFavorites = t }
-  //   static member (+) (gt1, gt2) =
-  //     {
-  //       Ungrouped = gt1.Ungrouped @ gt2.Ungrouped
-  //       FavoriteBands = gt1.FavoriteBands @ gt2.FavoriteBands
-  //       FavoriteFoods = gt1.FavoriteFoods @ gt2.FavoriteFoods
-  //       FavoriteMovies = gt1.FavoriteMovies @ gt2.FavoriteMovies
-  //       TopFavorites = gt1.TopFavorites @ gt2.TopFavorites
-  //     }
 
   type Model = {
     DragAndDrop : DragAndDropModel
@@ -191,21 +146,6 @@ module MultipleDragTypesDemo =
       [
         h2 props [ str f.Name ]
       ]
-
-  let createDraggable model dispatch thingId =
-    match Model.getThingById thingId model with
-    | Some thing ->
-      let content = renderThing thing
-      let styles = [
-        Cursor "grab"
-        JustifyContent "center"
-        Width "100%"
-      ]
-      let eg = ElementGenerator.Create (string thingId) styles [ ClassName "content-small" ] content
-      // create the whole thing as a drag handle; there are no interactive elements to consider
-      Draggable.asDragHandle model.DragAndDrop dragAndDropConfig dispatch eg
-      |> Some
-    | None -> None
   
   let createDraggableFromThing model dispatch thing =
     let content = renderThing thing
@@ -213,54 +153,65 @@ module MultipleDragTypesDemo =
       Cursor "grab"
       JustifyContent "center"
     ]
-    let eg = ElementGenerator.Create (string thing.Id) styles [ ClassName "content-small" ] content
-    // create the whole thing as a drag handle; there are no interactive elements to consider
-    Draggable.asDragHandle model.DragAndDrop dragAndDropConfig dispatch eg
+    Draggable.SelfHandle
+      model.DragAndDrop
+      dragAndDropConfig
+      (mappedMsg >> dispatch)
+      (string thing.Id)
+      div
+      styles
+      [ Id (string thing.Id); ClassName "content-small" ]
+      content
+    // let eg = ElementGenerator.Create (string thing.Id) styles [ ClassName "content-small" ] content
+    // // create the whole thing as a drag handle; there are no interactive elements to consider
+    // Draggable.asDragHandle model.DragAndDrop dragAndDropConfig dispatch eg
     |> Some
 
-  let renderElementSourceCollection draggables =
-    DropArea.fromDraggables div [] draggables
 
-  let renderFavorite model dispatch title draggables =    
-    let titleStatic =
-      ElementGenerator.Create "" [] [] [ str title ]
-      |> ElementGenerator.setTag h1
-      |> Draggable.draggable model dragAndDropConfig dispatch
-    let placeholder =
-      let id = Guid.NewGuid() |> string
-      ElementGenerator.Create id [] [] [ str "Drag here to place a favorite thing!" ]
-      |> Draggable.draggable model dragAndDropConfig dispatch
-    let styles = [ JustifyContent "center"; CSSProp.PaddingLeft "10px"; CSSProp.PaddingRight "10px" ]
-    DropArea.fromDraggables div [ Id "drop-area"; Style styles ] (titleStatic :: (placeholder :: draggables))
+  // let renderFavorite model dispatch title draggables =    
+  //   let titleStatic =
+  //     ElementGenerator.Create "" [] [] [ str title ]
+  //     |> ElementGenerator.setTag h1
+  //     |> Draggable.draggable model dragAndDropConfig dispatch
+  //   let placeholder =
+  //     let id = Guid.NewGuid() |> string
+  //     ElementGenerator.Create id [] [] [ str "Drag here to place a favorite thing!" ]
+  //     |> Draggable.draggable model dragAndDropConfig dispatch
+  //   let styles = [ JustifyContent "center"; CSSProp.PaddingLeft "10px"; CSSProp.PaddingRight "10px" ]
+  //   DropArea.fromDraggables div [ Id "drop-area"; Style styles ] (titleStatic :: (placeholder :: draggables))
 
-  let renderCategoryAsDropBucket model dispatch title =
-    let styles = [ 
-      JustifyContent "center"
-      CSSProp.PaddingLeft "10px"
-      CSSProp.PaddingRight "10px"
-      CSSProp.BackgroundColor "aquamarine" 
-      CSSProp.MinWidth "50px"
-    ]
-    let title =
-      ElementGenerator.Create "" styles [] [ str title ]
-      |> ElementGenerator.setTag h1
-    DropArea.asBucket model dragAndDropConfig (fun _ _ -> printfn "In drop bucket hover") (fun _ _ -> printfn "In drop bucket on drop") dispatch title
+  // let renderCategoryAsDropBucket model dispatch title =
+  //   let styles = [ 
+  //     JustifyContent "center"
+  //     CSSProp.PaddingLeft "10px"
+  //     CSSProp.PaddingRight "10px"
+  //     CSSProp.BackgroundColor "aquamarine" 
+  //     CSSProp.MinWidth "50px"
+  //   ]
+  //   let title =
+  //     ElementGenerator.Create "" styles [] [ str title ]
+  //     |> ElementGenerator.setTag h1
+  //   DropArea.asBucket model dragAndDropConfig (fun _ _ -> printfn "In drop bucket hover") (fun _ _ -> printfn "In drop bucket on drop") dispatch title
 
-  let renderFavoriteBands model dispatch elements = 
-    if elements |> List.isEmpty then
-      let draggable =
-        ElementGenerator.createGenerator
-          "favorite-bands-placeholder" 
-          [ Width "100%" ; Height "25px"; PaddingBottom "25px" ]
-          []
-          [ str "test" ]
-        |> Draggable.draggable model dragAndDropConfig dispatch
-      renderFavorite model dispatch "Top 3 Favorite Bands" [draggable]
-    else
-      renderFavorite model dispatch "Top 3 Favorite Bands" elements
-  let renderFavoriteFoods model dispatch elements = renderFavorite model dispatch "Top 3 Favorite Foods" elements
-  let renderFavoriteMovies model dispatch elements = renderFavorite model dispatch "Top 3 Favorite Movies" elements
-  let renderTopFavorites model dispatch elements = renderFavorite model dispatch "Top 3 Favorite Things" elements
+  let favoriteBandsDropArea model dispatch elements =
+    div [] []
+
+  let renderFavoriteBands model dispatch elements =  div [] []
+    // if elements |> List.isEmpty then
+    //   let draggable =
+    //     ElementGenerator.createGenerator
+    //       "favorite-bands-placeholder" 
+    //       [ Width "100%" ; Height "25px"; PaddingBottom "25px" ]
+    //       []
+    //       [ str "test" ]
+    //     |> Draggable.draggable model dragAndDropConfig dispatch
+    //   renderFavorite model dispatch "Top 3 Favorite Bands" [draggable]
+    // else
+    //   renderFavorite model dispatch "Top 3 Favorite Bands" elements
+  
+  // let renderFavoriteFoods model dispatch elements = renderFavorite model dispatch "Top 3 Favorite Foods" elements
+  // let renderFavoriteMovies model dispatch elements = renderFavorite model dispatch "Top 3 Favorite Movies" elements
+  // let renderTopFavorites model dispatch elements = renderFavorite model dispatch "Top 3 Favorite Things" elements
 
   let createBandDraggable model dispatch (id : Guid) (band : Band) =
     let styles = [
@@ -273,30 +224,32 @@ module MultipleDragTypesDemo =
       h2 [] [ str band.Name]
       h4 [] [ str band.Genre ]
     ]
-    Draggable.AsDraggable model dragAndDropConfig dispatch (string id) div styles props content
+    //Draggable.AsDraggable model dragAndDropConfig dispatch (string id) div styles props content
+    div [] []
 
   let favoriteBandsList model dispatch categoryId content =
-    let onHover : OnHover =
-      fun ev draggableId dropAreaId throttleId ->
-        match tryParseGuid draggableId with
-        | Some draggableId ->
-          match Model.getThingById draggableId model with
-          | Some (Thing.Band _) -> IsValidDrop (draggableId, dropAreaId) |> dispatch
-          | _ -> IsInvalidDrop (draggableId, categoryId) |> dispatch
-        | None -> ()
-    let onDrop  : OnDrop =
-      fun ev draggableId dropAreaId ->
-        match tryParseGuid draggableId with
-        | Some draggableId -> 
-          match Model.getThingById draggableId model with
-          | Some (Thing.Band _) -> IsValidDrop (draggableId, dropAreaId) |> dispatch
-          | _ -> IsInvalidDrop (draggableId, categoryId) |> dispatch
-        | None -> ()
+    // let onHover : OnHover =
+    //   fun ev draggableId dropAreaId throttleId ->
+    //     match tryParseGuid draggableId with
+    //     | Some draggableId ->
+    //       match Model.getThingById draggableId model with
+    //       | Some (Thing.Band _) -> IsValidDrop (draggableId, dropAreaId) |> dispatch
+    //       | _ -> IsInvalidDrop (draggableId, categoryId) |> dispatch
+    //     | None -> ()
+    //let onDrop  : OnDrop =
+      // fun ev draggableId dropAreaId ->
+      //   match tryParseGuid draggableId with
+      //   | Some draggableId -> 
+      //     match Model.getThingById draggableId model with
+      //     | Some (Thing.Band _) -> IsValidDrop (draggableId, dropAreaId) |> dispatch
+      //     | _ -> IsInvalidDrop (draggableId, categoryId) |> dispatch
+      //   | None -> ()
     let styles = [ JustifyContent "center"; CSSProp.PaddingLeft "10px"; CSSProp.PaddingRight "10px" ]
     let id = "band-drop-area"
     let props : IHTMLProp list = [ Id id; Style styles ]
 
-    DropArea.Collection model.DragAndDrop dragAndDropConfig (mappedMsg >> dispatch) onHover onDrop id div props content
+    //DropArea.Collection model.DragAndDrop dragAndDropConfig (mappedMsg >> dispatch) onHover onDrop id div props content
+    div [] []
 
   let view model dispatch =
     let dndDispatch = mappedMsg >> dispatch
@@ -311,8 +264,8 @@ module MultipleDragTypesDemo =
       things
       |> List.tryItem 0
       |> Option.defaultValue []
-      |> List.choose (createDraggableFromThing model dndDispatch)
-      |> renderElementSourceCollection
+      |> List.choose (createDraggableFromThing model dispatch)
+      //|> renderElementSourceCollection
 
     let bandElements = 
       things
@@ -323,18 +276,18 @@ module MultipleDragTypesDemo =
         | Thing.Band b -> Some b
         | _ -> None
       )
-      |> List.collect (createBandDraggable model.DragAndDrop dndDispatch (Guid.NewGuid()))
-      |> favoriteBandsList model dispatch "favorite-bands"
+      // |> List.collect (createBandDraggable model.DragAndDrop dndDispatch (Guid.NewGuid()))
+      // |> favoriteBandsList model dispatch "favorite-bands"
 
     let content =
       div [] [
-        sourceElements
+        // sourceElements
         div [
           Style [
             Display DisplayOptions.Flex
           ]
         ] [
-          bandElements
+          // bandElements
         ]
       ]
     
@@ -347,7 +300,7 @@ module MultipleDragTypesDemo =
       ]
       ClassName "page-small"
     ]
-    DragDropContext.context model.DragAndDrop dndDispatch div contextProps [content]
+    DragDropContext.Context model.DragAndDrop dndDispatch div contextProps [content]
 
   let update msg model =
     match msg with
