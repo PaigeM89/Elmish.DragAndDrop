@@ -204,7 +204,6 @@ module DragAndDrop =
       match loc with
       | Some loc ->
         OnMouseDown (fun (ev : Browser.Types.MouseEvent) ->
-          printfn "On Mouse Down: %A" ev
           ev.preventDefault()
           let o = getOffset ev (locId loc)
           (loc, fromME ev, o) |> DragStart |> dispatch
@@ -221,7 +220,6 @@ module DragAndDrop =
       match loc with
       | Some loc ->
         OnMouseDown (fun (ev : Browser.Types.MouseEvent) ->
-          printfn "On Mouse Down: %A" ev
           ev.preventDefault()
           let o = getOffset ev (locId loc)
           (loc, fromME ev, o) |> DragStart |> dispatch

@@ -4,13 +4,15 @@ open System
 
 (*
   This demo shows how to create a drag-and-drop setup with table rows.
+
+  TODO: Fix the numeric & text input boxes
 *)
 
 module TableDemo =
   open Fable.React
   open Fable.React.Props
   open Elmish
-  open Elmish.DragAndDrop
+  open Elmish.DragAndDrop2
 
   type ContentValue = {
     ContentId : Guid
@@ -78,29 +80,33 @@ module TableDemo =
 
     let numericInput value =
       input [
-        Value value
+        DefaultValue value
         OnChange (fun ev -> ())
       ]
 
     let createTableRow model dispatch index (cv : ContentValue)=
       let rowId = cv.ContentId |> string
-      let rootElementId = rowId
       let handleStyles = if model.DragAndDrop.Moving.IsSome then [] else [ Cursor "grab" ]
 
       // note that the content is the whole collection of table cells, without any wrapping tag.
       let content = [
           td [] [
-            ElementGenerator.Create (rowId + "-handle") handleStyles [] [
-              h2 [] [ str (string index)]
-            ]
-            |> DragHandle.dragHandle model.DragAndDrop rowId (dndMsg >> dispatch)
+            DragHandle.Handle
+              model.DragAndDrop
+              rowId
+              (dndMsg >> dispatch)
+              div
+              [ Id (rowId + "-handle"); Style handleStyles]
+              [
+                h2 [] [ str (string index) ]
+              ]
           ]
           td [] [
             numericInput cv.SomeInt
           ]
           td [] [
             input [
-              Value cv.SomeString
+              DefaultValue cv.SomeString
               OnChange (fun ev -> ())
             ]
           ]
@@ -120,13 +126,15 @@ module TableDemo =
             ]
           ]
       ]
-      let gen = 
-        ElementGenerator.Create rootElementId [] [Id rowId ] content
-        // set the tag on the element generator, so it'll generate a `tr` instead of the default `div`
-        // when combined with the `content` we created (a collection of `td` elements), we get a correctly
-        // defined table row.
-        |> ElementGenerator.setTag tr
-      Draggable.draggable model.DragAndDrop dragAndDropConfig (dndMsg >> dispatch) gen
+      Draggable.InnerHandle
+        model.DragAndDrop
+        dragAndDropConfig
+        (dndMsg >> dispatch)
+        rowId
+        tr
+        []
+        [ Id rowId ]
+        content
 
     let addRowButton dispatch = 
       button [
@@ -175,6 +183,7 @@ module TableDemo =
           let cv = model.ContentMap |> Map.find id
           createTableRow model dispatch index cv
         )
+        |> List.concat
       
       let table = 
         table [
@@ -187,7 +196,15 @@ module TableDemo =
           ]
         ] [
           tableHeaders
-          DropArea.fromDraggables tbody [] rows
+          DropArea.DropArea 
+            model.DragAndDrop
+            dragAndDropConfig
+            (MouseEventHandlers.Empty())
+            (dndMsg >> dispatch)
+            "drop-area"
+            tbody
+            []
+            rows
         ]
 
       let props : IHTMLProp list = [
@@ -204,7 +221,7 @@ module TableDemo =
         table
       ]
 
-      DragDropContext.context model.DragAndDrop (DndMsg >> dispatch) div props content
+      DragDropContext.Context model.DragAndDrop (DndMsg >> dispatch) div props content
   
   let addContent model cv =
     let dict = model.ContentMap |> Map.add (string cv.ContentId) cv

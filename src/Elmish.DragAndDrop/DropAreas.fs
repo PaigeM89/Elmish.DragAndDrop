@@ -158,9 +158,6 @@ module DropAreas =
 
     | DragOverNonDraggable (listIndex, dropAreaId) ->
       printfn "Drag Over Non Draggable raised for %A" (listIndex, dropAreaId)
-      // match model.Moving with
-      // | Some { StartLocation = (startList, startIndex, startingElementId) } ->
-
       model, Cmd.none
 
     | DragEnd ->
