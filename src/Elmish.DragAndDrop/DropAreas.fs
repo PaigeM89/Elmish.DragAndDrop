@@ -11,22 +11,50 @@ open Elmish.DragAndDrop2
 [<AutoOpen>]
 module DropAreas =
 
-  type DropAreaId = string
-  type OnHover = Browser.Types.MouseEvent -> DraggableId -> Throttle.Id -> unit
+  type OnHoverEnter = Browser.Types.MouseEvent -> DraggableId -> Throttle.Id -> unit
+  type OnHoverLeave = Browser.Types.MouseEvent -> DraggableId -> Throttle.Id -> unit
   type OnDrop  = Browser.Types.MouseEvent -> DraggableId -> unit
 
+  type MouseEventHandlers = {
+    OnHoverEnter : OnHoverEnter option
+    OnHoverLeave : OnHoverLeave option
+    OnDrop : OnDrop option
+  } with
+    static member Empty() = {
+      OnHoverEnter = None
+      OnHoverLeave = None
+      OnDrop = None
+    }
+
+    member this.GetOnHoverEnter() = this.OnHoverEnter |> Option.defaultValue (fun _ _ _ -> ())
+    member this.GetOnHoverLeave() = this.OnHoverLeave |> Option.defaultValue (fun _ _ _ -> ())
+    member this.GetOnDrop() = this.OnDrop |> Option.defaultValue (fun _ _ -> ())
+
+  let drawPlaceholder { Styles = styles; Props = props; Content = content } =
+    let handle = Draggable.SelfHandle 
+    []
+
   type DropArea =
-    static member DropArea model config (onHover : OnHover) (onDrop : OnDrop) dispatch tag props content =
+    static member DropArea model config (mouseFuncs : MouseEventHandlers) dispatch id tag props content =
       match model.Moving with
       | None ->
         tag props content
       | Some { StartLocation = (_, _, draggedElementId ) } ->
-        let hoverFunc ev throttleId = onHover ev draggedElementId throttleId
+        let hoverFunc ev throttleId = (mouseFuncs.GetOnHoverEnter()) ev draggedElementId throttleId
         let listeners  : IHTMLProp list = [
-          Listeners.hoverListenerWithFunc model draggedElementId dispatch hoverFunc config.MoveThrottleTimeMs
-          Listeners.releaseListenerWithFunc onDrop draggedElementId dispatch
+          Listeners.nonDraggableHoverListenerWithFunc model id dispatch (fun _ _ -> ()) config.MoveThrottleTimeMs
+          Listeners.releaseListenerWithFunc (mouseFuncs.GetOnDrop()) draggedElementId dispatch
         ]
         let props = props @ listeners
+        let content =
+          match config.Placeholder with
+          | Some { Styles = phStyles; Props = phProps; Content = phContent } -> 
+            let phId = id + "-placeholder"
+            let phProps = phProps @ [ Id phId ]
+            let handle = Draggable.SelfHandle model config dispatch phId div phStyles phProps phContent
+            content @ handle
+          | None -> content 
+
         tag props content
 
 
@@ -35,7 +63,7 @@ module DropAreas =
   // ************************************************************************************
 
   type DragDropContext =
-    static member context model dispatch tag (props : IHTMLProp list) content =
+    static member Context model dispatch tag (props : IHTMLProp list) content =
       match model.Moving with
       | None ->
         tag props content
@@ -127,6 +155,14 @@ module DropAreas =
         (setDragSource newStartLoc mdl), Cmd.none
       | None ->
         model, Cmd.none
+
+    | DragOverNonDraggable (listIndex, dropAreaId) ->
+      printfn "Drag Over Non Draggable raised for %A" (listIndex, dropAreaId)
+      // match model.Moving with
+      // | Some { StartLocation = (startList, startIndex, startingElementId) } ->
+
+      model, Cmd.none
+
     | DragEnd ->
       { model with Moving = None; Offset = None }, Cmd.none
     | ThrottleMsg throttleMsg ->

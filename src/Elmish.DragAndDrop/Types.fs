@@ -154,7 +154,7 @@ module Types =
   let internal setDragSource loc model =
     match model.Moving with
     | Some { Slide = Some slide} ->
-      let moving = {MovingStatus.Init loc  with Slide = Some slide }
+      let moving = { MovingStatus.Init loc  with Slide = Some slide }
       { model with Moving = Some moving }
     | Some { Slide = None } ->
       let moving = MovingStatus.Init loc
@@ -165,11 +165,16 @@ module Types =
 
   type DragAndDropMsg =
   /// Indicates dragging has started on an element. Requires the item location and starting coordinates.
+  /// The starting drop area id is an option because it's not always easy to have that when a drag has started.
   | DragStart of loc : ItemLocation * start : Coords * offset : Coords
   /// An item is currently being dragged. This updates the location of the cursor.
   | OnDrag of coords : Coords
   /// An item is currently being dragged and just moved over another item in the list.
   | DragOver of loc : ItemLocation
+  /// An item is currently being dragged over some other item. The List Index is included as an option
+  /// in case that data is available and relevant. This message is dispatched when an item enters a new
+  /// Drop Area, but has not hovered over a specific item in that drop area.
+  | DragOverNonDraggable of elementId : string * listIndex : ListIndex option
   /// The item was released and the drag has ended.
   | DragEnd
   | ThrottleMsg of Throttle.Msg
@@ -187,6 +192,11 @@ module Types =
   /// The Id of the throttle
   type MouseEventWithThrottle = Browser.Types.MouseEvent -> Throttle.Id -> unit
 
+  type Placeholder = {
+    Styles : CSSProp list
+    Props : IHTMLProp list
+    Content : ReactElement list
+  }
 
   type DragAndDropConfig = {
     /// CSS Styles applied to the currently dragged element.
@@ -209,9 +219,7 @@ module Types =
     ListenerElementProperties : IHTMLProp list option
 
     // todo: remove these if I don't use them.
-    BlankPlaceholderStyles : CSSProp list option
-    BlankPlaceholderProperties : IHTMLProp list option
-    BlankPlaceholderContent : ReactElement option
+    Placeholder : Placeholder option
 
     /// Throttle for elements moving to accomodate a dropped element. 
     /// This won't prevent the first move, only subsequent moves.
@@ -226,8 +234,6 @@ module Types =
       SlidingElementProperties = None
       ListenerElementStyles = None
       ListenerElementProperties = None
-      BlankPlaceholderStyles = None
-      BlankPlaceholderProperties = None
-      BlankPlaceholderContent = None
+      Placeholder = None
       MoveThrottleTimeMs = None
     }

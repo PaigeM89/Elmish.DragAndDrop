@@ -99,12 +99,17 @@ module HelperTypes =
       ElementId = ele
     }
 
+  type DropAreaId = string
+  type CurrentDropArea = ListIndex * DropAreaId option
+
   type MovingStatus = {
       Slide : Slide option
       StartLocation : ItemLocation
+      CurrentDropArea : CurrentDropArea option
     } with
         member this.SetSlide (slide : Slide option) = { this with Slide = slide }
-        static member Init loc = { Slide = None; StartLocation = loc }
+        static member Init loc =
+          { Slide = None; StartLocation = loc; CurrentDropArea = Some (locListIndex loc, None) }
 
 module BrowserHelpers =
   open HelperTypes
@@ -113,6 +118,14 @@ module BrowserHelpers =
       let doc = Browser.Dom.document
       let ele = doc.getElementById(id)
       ele
+
+  let getLeftTopForElement id =
+    let ele = getDraggedElement id
+    let rect = ele.getBoundingClientRect()
+    let x = rect.left
+    let y = rect.top
+    x, y
+  
   let getOffset ev id =
     let ele = getDraggedElement id
     let rect = ele.getBoundingClientRect()

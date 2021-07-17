@@ -67,9 +67,15 @@ module SingleListDemo =
     let dispatch = (mappedMsg >> dispatch)
 
     let dropAreaContent =
+      // get all the element Ids in a single list.
+      // we don't have multiple categories to concern ourselves with.
       model.DragAndDrop.ElementIdsSingleList()
+      // we collect here because sometimes the Draggable returns multiple items
       |> List.collect(fun id ->
+        // look up the content in our model's content map
         let content = Map.tryFind id model.ContentMap |> Option.defaultValue (div [] [ str "Unable to find content" ])
+        
+        // create the draggable
         Draggable.SelfHandle
           model.DragAndDrop
           dragAndDropConfig
@@ -90,10 +96,17 @@ module SingleListDemo =
         MarginRight "auto"
       ] :> IHTMLProp
     ]
+
     let dropArea =
-      let onHover _ _ _ = ()
-      let onDrop _ _ = ()
-      DropArea.DropArea model.DragAndDrop dragAndDropConfig onHover onDrop dispatch div dropAreaProps dropAreaContent
+      DropArea.DropArea 
+        model.DragAndDrop
+        dragAndDropConfig
+        (MouseEventHandlers.Empty())
+        dispatch
+        "drop-area"
+        div
+        dropAreaProps
+        dropAreaContent
     
     let props : IHTMLProp list = [ 
       ClassName "wrapper"
@@ -103,7 +116,7 @@ module SingleListDemo =
         Width "100%"
       ]
     ]
-    DragDropContext.context model.DragAndDrop dispatch div props [dropArea]
+    DragDropContext.Context model.DragAndDrop dispatch div props [dropArea]
 
   let update msg model =
     match msg with

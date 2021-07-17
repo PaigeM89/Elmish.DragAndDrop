@@ -72,7 +72,20 @@ The thing that moves. This needs styles & props separate so I can render preview
 
 Listens for when a draggable has entered its territory.
 
+This is also probably going to be how we solve the "insert at the bottom" issue.
+
 ## Drop Area
 
 The place where things actually go when released (sorted).
 
+# Element Gen vs. Other Record vs. HTML-style Props vs. huge funcs
+
+Element gen is very clunky to use and has no synergy with other stuff, and can often encourage or require  additional nesting.
+
+Any other record will be similiarly clunky, as well as hurting backwards compatibility.
+
+HTML Style props will run the risk of missing vital props.
+
+Huge funcs is just annoying.
+
+what do

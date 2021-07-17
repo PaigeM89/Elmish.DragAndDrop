@@ -14,22 +14,8 @@ module internal Listeners =
   open Fable.Core
   open Elmish.DragAndDrop2
 
-  /// Listens for a "MouseDown" event on an element
-  let defaultDraggable model (draggableId : DraggableId) dispatch =
-    let loc = getLocationForElement draggableId model
-    match loc with
-    | Some loc ->
-      OnMouseDown (fun (ev : Browser.Types.MouseEvent) ->
-        printfn "On Mouse Down: %A" ev
-        ev.preventDefault()
-        let o = getOffset ev (locId loc)
-        (loc, fromME ev, o) |> DragStart |> dispatch
-      )
-    | None -> 
-      JS.console.error(sprintf "No location found for element with id '%s' in drag and drop items" draggableId)
-      OnMouseDown (fun (ev : Browser.Types.MouseEvent) -> ())
-
-  // let defaultMouseDownListener model (draggableId : DraggableId) dispatch =
+  // /// Listens for a "MouseDown" event on an element
+  // let defaultDraggable model (draggableId : DraggableId) dispatch =
   //   let loc = getLocationForElement draggableId model
   //   match loc with
   //   | Some loc ->
@@ -71,6 +57,7 @@ module internal Listeners =
   let defaultHoverListener model id dispatch throttleTimeSpan =
     OnMouseEnter (fun (ev : MouseEvent) ->
       ev.preventDefault()
+      printfn "on mouse enter for element %A" id
       match throttleTimeSpan with
       | Some timespan ->
           let isThrottled = throttle model.ThrottleState id timespan ev
@@ -115,6 +102,56 @@ module internal Listeners =
           | Some loc ->
               DragOver (loc) |> dispatch
           | None -> ()
+    )
+
+  let hoverLeaveListenerWithFunc model id dispatch (func : MouseEventWithThrottle) throttleTimeSpan =
+    OnMouseLeave (fun (ev : MouseEvent) ->
+      ev.preventDefault()
+      match throttleTimeSpan with
+      | Some timespan ->
+          let isThrottled = throttle model.ThrottleState id timespan ev
+          match isThrottled with
+          | None -> ()
+          | Some (ev, throttleMsg) ->
+              throttleMsg |> ThrottleMsg |> dispatch
+              func ev id
+              let loc = getLocationForElement id model
+              match loc with
+              | Some loc ->
+                  DragOver (loc) |> dispatch
+              | None -> ()
+      | None ->
+          func ev id
+          let loc = getLocationForElement id model
+          match loc with
+          | Some loc ->
+              DragOver (loc) |> dispatch
+          | None -> ()
+    )
+
+  let nonDraggableHoverListenerWithFunc model id dispatch (func : MouseEventWithThrottle) throttleTimeSpan =
+    OnMouseEnter (fun (ev : MouseEvent) ->
+      ev.preventDefault()
+      match throttleTimeSpan with
+      | Some timespan ->
+          let isThrottled = throttle model.ThrottleState id timespan ev
+          match isThrottled with
+          | None -> ()
+          | Some (ev, throttleMsg) ->
+              throttleMsg |> ThrottleMsg |> dispatch
+              func ev id
+              let loc = getLocationForElement id model
+              match loc with
+              | Some (listIndex, _, _) ->
+                  DragOverNonDraggable (id, Some listIndex) |> dispatch
+              | None -> DragOverNonDraggable (id, None) |> dispatch
+      | None ->
+          func ev id
+          let loc = getLocationForElement id model
+          match loc with
+          | Some (listIndex, _, _) ->
+              DragOverNonDraggable (id, Some listIndex) |> dispatch
+          | None -> DragOverNonDraggable (id, None) |> dispatch
     )
 
   let defaultReleaseListener dispatch =
