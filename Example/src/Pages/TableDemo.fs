@@ -2,6 +2,10 @@ namespace Pages
 
 open System
 
+(*
+  This demo shows how to create a drag-and-drop setup with table rows.
+*)
+
 module TableDemo =
   open Fable.React
   open Fable.React.Props
@@ -83,6 +87,7 @@ module TableDemo =
       let rootElementId = rowId
       let handleStyles = if model.DragAndDrop.Moving.IsSome then [] else [ Cursor "grab" ]
 
+      // note that the content is the whole collection of table cells, without any wrapping tag.
       let content = [
           td [] [
             ElementGenerator.Create (rowId + "-handle") handleStyles [] [
@@ -117,6 +122,9 @@ module TableDemo =
       ]
       let gen = 
         ElementGenerator.Create rootElementId [] [Id rowId ] content
+        // set the tag on the element generator, so it'll generate a `tr` instead of the default `div`
+        // when combined with the `content` we created (a collection of `td` elements), we get a correctly
+        // defined table row.
         |> ElementGenerator.setTag tr
       Draggable.draggable model.DragAndDrop dragAndDropConfig (dndMsg >> dispatch) gen
 
@@ -179,7 +187,6 @@ module TableDemo =
           ]
         ] [
           tableHeaders
-
           DropArea.fromDraggables tbody [] rows
         ]
 

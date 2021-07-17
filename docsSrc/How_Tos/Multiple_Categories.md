@@ -26,5 +26,8 @@ Note that you'll need to define multiple `DropAreas` for these elements to live 
     )
 ```
 
-This, however, comes at the cost of losing categories when they lose elements.
+This, however, comes at the cost of losing categories when they lose all their elements. This could potentially even leave you with only 1 category.
 
+# Exluding Items From Categories
+
+There is a WIP of this concept in `MultipleDragTypes.fs`.

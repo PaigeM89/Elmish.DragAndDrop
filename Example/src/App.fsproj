@@ -13,6 +13,7 @@
     <Compile Include="Pages/MultiListDemo.fs" />
     <Compile Include="Pages/TableDemo.fs" />
     <Compile Include="Pages/DropToDeleteDemo.fs" />
+    <Compile Include="Pages/MultipleDragTypes.fs" />
     <Compile Include="App.fs" />
   </ItemGroup>
   <ItemGroup>

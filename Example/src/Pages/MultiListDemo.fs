@@ -17,7 +17,7 @@ module MultiListDemo =
   }
 
   let initContent model =
-    let allContent = 
+    let allContent =
       [
         div [] [ h3 [] [str "Content 0"]; p [] [ str "This is some content" ] ]
         div [] [ h3 [] [str "Content 1"]; p [] [ str "And this is more content" ] ]

@@ -103,7 +103,7 @@ module HelperTypes =
       Slide : Slide option
       StartLocation : ItemLocation
     } with
-        member this.setSlide (slide : Slide option) = { this with Slide = slide }
+        member this.SetSlide (slide : Slide option) = { this with Slide = slide }
         static member Init loc = { Slide = None; StartLocation = loc }
 
 module BrowserHelpers =

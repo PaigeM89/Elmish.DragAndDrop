@@ -7,6 +7,11 @@ open Elmish.Throttle
 
 
 module DragAndDrop =
+  open Fable.React
+  open Fable.React.Props
+
+  type Tag = IHTMLProp seq -> ReactElement seq -> ReactElement
+  type StyledTag = CSSProp seq -> Tag
 
   // ************************************************************************************
   // MODEL
@@ -26,12 +31,21 @@ module DragAndDrop =
 
     ThrottleState: Map<string, Throttle.Status>
   } with
-    /// Returns the Ids of each component in the model, in the order they are currently sorted
+    /// Returns the Ids of each component in the model, in the order they are currently sorted.
     member this.ElementIds() =
       this.Items
       |> List.map (fun itemList ->
         itemList |> List.map (fun (_, _, id) -> string id)
       )
+
+    /// <summary>
+    /// Returns the Ids of each component in the model, in the order they are currently sorted.
+    /// This appends each category (each root-level list) into a single list, in order of those lists.
+    /// If you have a single category, this is entirely harmless and saves you from doing
+    /// `ElementIds() |> List.concat` every time you need the element Ids. If you have multiple categories,
+    /// then you will usually want `ElementIds()` instead.
+    /// </summary>
+    member this.ElementIdsSingleList() = this.ElementIds() |> List.concat
 
     /// Returns a new instance of an empty Drag And Drop model
     static member Empty() = {
@@ -170,25 +184,44 @@ module DragAndDrop =
   // OTHER TYPES
   // ************************************************************************************
 
-  open Fable.React
-  open Fable.React.Props
-
   let private getLocationForElement itemId model = 
     model.Items
     |> List.map (fun li -> li |> List.tryFind (fun (_, _, id) -> id = itemId))
     |> List.choose id
     |> List.tryHead
 
+  /// The Id of the throttle
+  type MouseEventWithThrottle = Browser.Types.MouseEvent -> Throttle.Id -> unit
+
   module internal Listeners =
     open Browser.Types
     open Elmish.DragAndDropHelpers.BrowserHelpers
     open Fable.Core
 
+    /// Listens for a "MouseDown" event on an element
     let defaultDraggable model (draggableId : DraggableId) dispatch =
       let loc = getLocationForElement draggableId model
       match loc with
       | Some loc ->
         OnMouseDown (fun (ev : Browser.Types.MouseEvent) ->
+          printfn "On Mouse Down: %A" ev
+          ev.preventDefault()
+          let o = getOffset ev (locId loc)
+          (loc, fromME ev, o) |> DragStart |> dispatch
+        )
+      | None -> 
+        JS.console.error(sprintf "No location found for element with id '%s' in drag and drop items" draggableId)
+        OnMouseDown (fun (ev : Browser.Types.MouseEvent) -> ())
+
+    /// Listens for a "mouse down" event. On an event, this returns the given id, which is
+    /// _the id of the element to move_, which does not have to be the id of the element being clicked.
+    /// For example, this could be the id of a parent element, where one of the child elements is a "handle".
+    let defaultMouseDownListener model (draggableId : DraggableId) dispatch =
+      let loc = getLocationForElement draggableId model
+      match loc with
+      | Some loc ->
+        OnMouseDown (fun (ev : Browser.Types.MouseEvent) ->
+          printfn "On Mouse Down: %A" ev
           ev.preventDefault()
           let o = getOffset ev (locId loc)
           (loc, fromME ev, o) |> DragStart |> dispatch
@@ -218,17 +251,18 @@ module DragAndDrop =
                 let loc = getLocationForElement id model
                 match loc with
                 | Some loc ->
-                    DragOver loc |> dispatch
+                    DragOver (loc) |> dispatch
                 | None -> ()
         | None ->
             let loc = getLocationForElement id model
             match loc with
             | Some loc ->
-                DragOver loc |> dispatch
+                printfn "Dragging element over location %A" loc
+                DragOver (loc) |> dispatch
             | None -> ()
       )
 
-    let hoverListenerWithFunc model id dispatch func throttleTimeSpan =
+    let hoverListenerWithFunc model id dispatch (func : MouseEventWithThrottle) throttleTimeSpan =
       OnMouseEnter (fun (ev : MouseEvent) ->
         ev.preventDefault()
         match throttleTimeSpan with
@@ -242,14 +276,14 @@ module DragAndDrop =
                 let loc = getLocationForElement id model
                 match loc with
                 | Some loc ->
-                    DragOver loc |> dispatch
+                    DragOver (loc) |> dispatch
                 | None -> ()
         | None ->
             func ev id
             let loc = getLocationForElement id model
             match loc with
             | Some loc ->
-                DragOver loc |> dispatch
+                DragOver (loc) |> dispatch
             | None -> ()
       )
 
@@ -277,11 +311,17 @@ module DragAndDrop =
     /// HTML Properties applied to the sliding element, if any. Not currently implemented.
     SlidingElementProperties : IHTMLProp list option
     /// CSS Styles applied to the elements listening for a hover event.
-    /// During a drag, this is all elements.
+    /// During a drag, this is all elements that may shift to adjust for a draggable item to be dropped.
     ListenerElementStyles : CSSProp list option
     /// HTML Properties applied to the elements listening for a hover event.
-    /// During a drag, this is all elements.
+    /// During a drag, this is all elements that may shift to adjust for a draggable item to be dropped.
     ListenerElementProperties : IHTMLProp list option
+
+    // todo: remove these if I don't use them.
+    BlankPlaceholderStyles : CSSProp list option
+    BlankPlaceholderProperties : IHTMLProp list option
+    BlankPlaceholderContent : ReactElement option
+
     /// Throttle for elements moving to accomodate a dropped element. 
     /// This won't prevent the first move, only subsequent moves.
     MoveThrottleTimeMs : System.TimeSpan option
@@ -295,6 +335,9 @@ module DragAndDrop =
       SlidingElementProperties = None
       ListenerElementStyles = None
       ListenerElementProperties = None
+      BlankPlaceholderStyles = None
+      BlankPlaceholderProperties = None
+      BlankPlaceholderContent = None
       MoveThrottleTimeMs = None
     }
 
@@ -329,7 +372,7 @@ module DragAndDrop =
 
   module ElementGenerator = 
     let createGenerator id styles props content : ElementGenerator =
-      { Id = id; Tag = div; Styles = styles; Props = props; Content = content }
+      { Id = id; Tag = div; Styles = styles; Props = props; Content = content; }
     let addStyles newStyles (gen : ElementGenerator) = gen.AddStyles newStyles
     let addProps newProps (gen : ElementGenerator) = gen.AddProps newProps
     let addContent newContent (gen : ElementGenerator) = gen.AddContent newContent
@@ -363,6 +406,20 @@ module DragAndDrop =
       |> ElementGenerator.addProps props
       |> ElementGenerator.addStyles appendedStyles
 
+    let buildDraggedFromTags config cursor id tag styles props content =
+      let idProp = (Id id) :> IHTMLProp
+      let appendedStyles =
+        config.DraggedElementStyles |> orEmpty |> appendR [
+          PointerEvents "none"
+          Left cursor.x
+          Top cursor.y
+        ]
+      let styles : IHTMLProp =
+        styles @ appendedStyles |> Style :> IHTMLProp
+      let props = 
+        props @ (config.DraggedElementProperties |> orEmpty |> appendR [idProp])
+      tag (styles :: props) content
+
     let buildHoverPreview config id gen =
       let idProp = (Id id) :> IHTMLProp
       let styles = config.HoverPreviewElementStyles |> orEmpty
@@ -370,6 +427,17 @@ module DragAndDrop =
       gen
       |> ElementGenerator.addStyles styles
       |> ElementGenerator.addProps props
+
+    let buildHoverPreviewFromTags config id (tag : Tag) styles props content =
+      let idProp = (Id id) :> IHTMLProp
+      let styles : IHTMLProp =
+        // append given styles first so the config overrides them as necessary
+        styles @ (config.HoverPreviewElementStyles |> orEmpty)
+        |> Style
+        :> IHTMLProp
+      let props = 
+        (config.HoverPreviewElementProperties |> orEmpty |> appendR [ idProp ]) @ props
+      tag (styles :: props) content
 
     let buildHoverListener config model id dispatch gen =
       let listener = Listeners.defaultHoverListener model id dispatch config.MoveThrottleTimeMs
@@ -444,6 +512,9 @@ module DragAndDrop =
       else
         [Rendering.renderWithHoverListener config model id dispatch gen]
 
+  // type TestDraggable =
+  // | Draggable of elements : TestDraggable
+
   /// Defines an object that can be clicked on to drag elements.
   type DragHandle =
     /// Creates a new `DragHandle`. The `id` passed here is the id of the `Draggable`, NOT the id of this
@@ -460,6 +531,9 @@ module DragAndDrop =
   /// dragged unless it somehow includes a `DragHandle`; a `Draggable` is merely a way to identify
   /// elements that should be able to move.
   type Draggable = {
+    /// The `ElementGenerators` this Draggable will use to generate Elements.
+    /// This is a list because a `Draggable` might create multiple `ElementGenerators`, 
+    /// like it does when creating a hover preview item.
     Generators : ElementGenerator list
   } with
     /// Creates a new `Draggable`. The `ElementGenerator` passed in must contain a `DragHandle` somewhere in order for
@@ -476,8 +550,12 @@ module DragAndDrop =
         else
           { Generators = [ Building.buildHoverListener config model gen.Id dispatch gen ] }
 
+    /// <summary>
     /// Creates a new `Draggable` where the whole element is a `DragHandle`. This will cause all of the children
     /// to not be able to be clicked on, so interactable elements won't work as expected.
+    /// </summary>
+    /// todo: if we render as a drag handle, put the properties on the gen to the container?
+    /// see if this fixes the "box border too big, can't drag by it" issue
     static member asDragHandle model config dispatch gen =
       let handleId = gen.Id + "-handle"
       let handleGen = ElementGenerator.Create handleId [] [] gen.Content
@@ -496,16 +574,89 @@ module DragAndDrop =
         else
           { Generators = [ Building.buildHoverListener config model gen.Id dispatch gen ] }
 
+    // static member asPlaceholder model config dispatch gen =
+    //   match model.Moving with
+    //   | None ->
+    //     { Generators = [ gen ] }
+    //   | Some { StartLocation = (_, _, _ )} ->
+    //     { Generators = [ Building.buildHoverListener config model gen.Id dispatch gen ] }
+
+    // test functions ************************
+
+    /// Creates an element that can be dragged.
+    static member AsDraggable model config dispatch id (tag : Tag) styles props content =
+      match model.Moving with
+      | None ->
+        // no drag in action; render this with a mouse down listener
+        let listener : IHTMLProp = 
+          Listeners.defaultMouseDownListener model id dispatch :> IHTMLProp
+        let styles = styles |> Style :> IHTMLProp
+        let props = 
+          let id = Id id :> IHTMLProp
+          [listener; id] @ props
+        [tag (styles :: props) content]
+      | Some { StartLocation = (_, _, draggedElementId )} ->
+        if id = draggedElementId then
+          let preview = Building.buildHoverPreviewFromTags config id tag styles props content
+          let dragged = Building.buildDraggedFromTags config model.Cursor id tag styles props content
+          [ preview; dragged ]
+        else
+          let listener : IHTMLProp = 
+            Listeners.defaultHoverListener model id dispatch config.MoveThrottleTimeMs :> IHTMLProp
+          let styles = (config.ListenerElementStyles |> Option.defaultValue []) @ styles |> Style :> IHTMLProp
+          let props = 
+            let id = Id id :> IHTMLProp
+            [listener; id] @ (config.ListenerElementProperties |> Option.defaultValue []) @ props
+          [tag (styles :: props) content]
+    
+    /// Creates an element that acts as a handle for another element, where interacting with
+    /// this element will cause that target element (usually a parent element) to be dragged.
+    static member AsHandle model config dispatch elementId draggableId (tag : Tag) styles props content =
+      ()
+
+  // this is basically what an element generator is, though the difference in intended use is a TINY bit different
+  // also i could just add the rest of the args so the whole thing is like `Draggable.AsDraggable (props : DraggableProperties)`
+
   // ************************************************************************************
   // DROP AREA
   // ************************************************************************************
+
+  type IListener = interface end
+
+  type DropAreaId = string
+  type OnHover = Browser.Types.MouseEvent -> DraggableId -> DropAreaId -> Throttle.Id -> unit
+  type OnDrop  = Browser.Types.MouseEvent -> DraggableId -> DropAreaId -> unit
+
+  type DropAreaOptionalConfiguration = {
+    OnHoverStart : OnHover option
+    OnDrop : OnDrop option
+    GeneratePlaceholder : bool
+  } with
+    static member Default() = {
+      OnHoverStart = None
+      OnDrop = None
+      GeneratePlaceholder = false
+    }
+
+  type DropAreaConfig = {
+    Model : DragAndDropModel
+    Config : DragAndDropConfig
+    Dispatch : Msg -> unit
+    
+    Tag : Tag
+    Styles : CSSProp list
+    Props : IHTMLProp list
+    Content : ReactElement list
+
+    OptionalConfig : DropAreaOptionalConfiguration option
+  }
 
   /// An area where `Draggables` live and can be moved.
   type DropArea =
 
     /// Creates a `DropArea` from the given `Draggables`.
-    static member fromDraggables tag props (draggables : Draggable list) =
-      let content = draggables |> List.map (fun x -> x.Generators |> List.map (fun g -> g.Render())) |> List.concat
+    static member fromDraggables tag props (draggables : Draggable list) : ReactElement =
+      let content = draggables |> List.collect (fun x -> x.Generators |> List.map (fun g -> g.Render()))
       tag props content
 
     /// Creates a `DropArea` that accepts `Draggables` but does not display them. It exposes `onHover` and `onDrop` 
@@ -519,6 +670,19 @@ module DragAndDrop =
           Listeners.releaseListenerWithFunc onDrop draggedElementId dispatch
         ]
         gen |> ElementGenerator.addProps props |> ElementGenerator.render
+
+    static member Collection model config dispatch (onHover : OnHover) (onDrop : OnDrop) dropAreaId tag props content =
+      match model.Moving with
+      | None -> tag props content
+      | Some { StartLocation = (_, _, draggedElementId ) } ->
+        let hoverFunc ev throttleId = onHover ev draggedElementId dropAreaId throttleId
+        let dropFunc ev elementId = onDrop ev elementId dropAreaId
+        let listenerProps : IHTMLProp list = [
+          Listeners.hoverListenerWithFunc model draggedElementId dispatch hoverFunc config.MoveThrottleTimeMs
+          Listeners.releaseListenerWithFunc dropFunc draggedElementId dispatch
+        ]
+        let props = props @ listenerProps
+        tag props content
 
 
   // ************************************************************************************

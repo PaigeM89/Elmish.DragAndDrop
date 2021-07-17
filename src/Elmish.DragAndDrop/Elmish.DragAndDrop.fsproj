@@ -23,6 +23,10 @@
   <ItemGroup>
     <Compile Include="AssemblyInfo.fs" />
     <Compile Include="Helpers.fs" />
+    <Compile Include="Types.fs" />
+    <Compile Include="Listeners.fs" />
+    <Compile Include="Draggables.fs" />
+    <Compile Include="DropAreas.fs" />
     <Compile Include="DragDropContext.fs" />
   </ItemGroup>
   <ItemGroup>

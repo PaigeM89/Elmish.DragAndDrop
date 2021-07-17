@@ -1,5 +1,12 @@
 namespace Pages
 
+(*
+  This demo shows how you can create "handles", 
+  elements that the user will click on, to drag a parent element around.
+  This is useful if the parent element contains elements that the user will want to interact with,
+  such as input elements.
+*)
+
 module HandlesDemo =
   open Fable.React
   open Fable.React.Props
@@ -109,7 +116,7 @@ module HandlesDemo =
     ]
     let dropAreaContent =
       model.DragAndDrop.ElementIds()
-      |> List.map (fun li ->
+      |> List.collect (fun li ->
         li
         |> List.map (fun (rootElementId) ->
             inputValueLookup model rootElementId
@@ -117,7 +124,6 @@ module HandlesDemo =
             |> Draggable.draggable model.DragAndDrop dragAndDropConfig (mappedMsg >> dispatch)
         )
       )
-      |> List.concat
       |> DropArea.fromDraggables div dropAreaProps
     DragDropContext.context model.DragAndDrop (mappedMsg >> dispatch)
       div [

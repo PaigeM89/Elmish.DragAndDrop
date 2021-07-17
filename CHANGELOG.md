@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+### Added
+- 
+
 ## [0.3.0] - 2021-06-13
 
 ### Added
@@ -12,13 +17,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added APIs For `Draggables`, separating the logic between what is grabbable and what actually drags.
 - Added a `DropArea.asBucket` function to create a drop area that accepts elements, dispatches some events, and doesn't draw them (they just disappear).
 - New `DragDropContext` to capture events in a wider area than a `droparea`. This lets the user drag things around in an inuitive way without changing where things can be dropped.
-- New `DragDropContext` to capture events in a wider area than a `droparea`. This lets the user drag things around in an inuitive way without changing where things can be dropped.
 
 ### Removed
 - Removed APIs for creating `DropAreas` from `DragHandles`, as `DragHandles` now immediately turn into `ReactElements` and cannot be deferred to render later.
 
 ### Changed
-- Redid namespace organization to improve usability
 - Redid namespace organization to improve usability
 
 ## [0.3.0-alpha02] - 2021-05-26

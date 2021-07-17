@@ -1,6 +1,6 @@
 # Drop Areas Without Lists / Drop Areas as Buckets
 
-Sometimes you'll want to make a `DropArea` that doesn't show the items in it; you want a "bucket" to drop items into and have those items removed from the current list.
+Sometimes you'll want to make a `DropArea` that doesn't show the items in it; you want a "bucket" to drop items into and have those items removed from the current list. For example, you may want a "bucket" to drag things to do delete them, or you may want to be able to drag an item over something to transfer it to another page or otherwise currently hidden list.
 
 This is done with `DropArea.asBucket`, which has the following signature:
 
@@ -10,4 +10,5 @@ The `model` and `config` are used to set state & rendering options, respecitvely
 
 `OnHover` is called when an element is hovered over the `DropArea`, and is given the mouseEvent & the _Id of the DropArea_. `OnDrop` is called when a drag is ended while hovering over a DropArea, and is given the mouseEvent & _the Id of the dropped element_. 
 
-`dispatch` is the classic Elmish dispatch. `ElementGenerator` 
+`dispatch` is the classic Elmish dispatch. `ElementGenerator` generates the element to hover over to release the dragged item & trigger an action. The Element Generator does not need to contain any Draggables or Drag Handles, it can just contain regular content.
+

@@ -10,7 +10,7 @@ module SingleListDemo =
   open Fable.React
   open Fable.React.Props
   open Elmish
-  open Elmish.DragAndDrop
+  open Elmish.DragAndDrop2
 
   type Model = {
     /// Stores information for the Drag & Drop internal state
@@ -63,21 +63,24 @@ module SingleListDemo =
       ]
   }
 
-  let createDragHandle model elementId dispatch =
-    let element =
-      Map.tryFind elementId model.ContentMap
-      |> Option.defaultValue (div [] [])
-    let handleId = elementId + "-handle"
-    ElementGenerator.Create handleId [ Cursor "grab" ] [] [element]
-    |> DragHandle.dragHandle model.DragAndDrop elementId dispatch
-
-  let createDraggable model elementId dispatch =
-    let handle = createDragHandle model elementId dispatch
-    ElementGenerator.Create elementId [] [ ClassName "content" ] [ handle ]
-    |> Draggable.draggable model.DragAndDrop dragAndDropConfig dispatch
-
   let view model (dispatch : Msg -> unit) =
     let dispatch = (mappedMsg >> dispatch)
+
+    let dropAreaContent =
+      model.DragAndDrop.ElementIdsSingleList()
+      |> List.collect(fun id ->
+        let content = Map.tryFind id model.ContentMap |> Option.defaultValue (div [] [ str "Unable to find content" ])
+        Draggable.SelfHandle
+          model.DragAndDrop
+          dragAndDropConfig
+          dispatch
+          id
+          div
+          [ Cursor "grab" ]
+          [ ClassName "content"; Id id ]
+          [ content ]
+      )
+
     let dropAreaProps = [ 
       Style [
         Background "#33adff"
@@ -87,28 +90,20 @@ module SingleListDemo =
         MarginRight "auto"
       ] :> IHTMLProp
     ]
-    let dropAreaContent =
-      // note that element Ids are always a list of lists, to accomodate multiple categories.
-      // see the Multi List Demo for an example of that.
-      model.DragAndDrop.ElementIds()
-      |> List.map(fun li ->
-        li
-        |> List.map (fun id ->
-          createDraggable model id dispatch
-        )
-        |> DropArea.fromDraggables div dropAreaProps
-      )
+    let dropArea =
+      let onHover _ _ _ = ()
+      let onDrop _ _ = ()
+      DropArea.DropArea model.DragAndDrop dragAndDropConfig onHover onDrop dispatch div dropAreaProps dropAreaContent
+    
     let props : IHTMLProp list = [ 
       ClassName "wrapper"
       Style [
-        Display DisplayOptions.Flex
         MarginLeft "auto"
         MarginRight "auto"
         Width "100%"
       ]
     ]
-    let content = dropAreaContent
-    DragDropContext.context model.DragAndDrop dispatch div props content
+    DragDropContext.context model.DragAndDrop dispatch div props [dropArea]
 
   let update msg model =
     match msg with
