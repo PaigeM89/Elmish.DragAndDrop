@@ -1,5 +1,9 @@
 # Elmish.DragAndDrop
 
+**This library is in BETA**
+
+Every minor update could contain a lot of breaking changes to the API. While upgrading to stay up to date is probably helpful, only do so if you have the time to fix things.
+
 ## How To Use
 
 1. At the scope you'll define the `DragDropContext` (see next step), add a `DragAndDropModel` to your model, and a `DragAndDropMsg` to your messages.

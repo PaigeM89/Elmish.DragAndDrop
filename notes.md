@@ -88,9 +88,9 @@ We tie in 2 listeners:
 
 Neither of these are tied to a model. We _only_ care if a drag is in progress, which we check via the model.
 
-I think the model needs to change to be more accomodating to multiple categories? Can I make it generic? Should I? It can only be generic across N specifically defined types, so no, that doesn't really help, does it. Not unless the pattern is to define distinct draggable categores in a DU.
+I think the model needs to change to be more accomodating to multiple categories? Can I make it generic? Should I? We can use the generic to drive the type of the key of the categories, like so: `Items: Map<'a, ItemLocation list list>`, so that the key is required to do any kind of lookup.
 
-Maybe the `DragDropContext` needs to accept a list of `DragAndDropModel` instances?
+Maybe the `DragDropContext` needs to accept a list of `DragAndDropModel` instances? This ran into issues when determining which model an event was relevant to. This is what makes me think we need to key our categories, and run off of that, making the whole model generic.
 
 # Element Gen vs. Other Record vs. HTML-style Props vs. huge funcs
 
@@ -103,3 +103,9 @@ HTML Style props will run the risk of missing vital props.
 Huge funcs is just annoying.
 
 what do
+
+# Item Locations & Item Trees
+
+I think I want a single `ItemLocation` type to return during events. I want an `ItemTree` in the Model to accurately build out the item ... tree...
+
+The reason we want to put that info in `ItemLocation` is so we can move the item info, including the category, within the message and not require it to be supplied when calling `update`. We also want a single `DragAndDrop` model that contains all the items across all categories.

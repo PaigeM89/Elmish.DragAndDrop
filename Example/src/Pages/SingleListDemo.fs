@@ -10,7 +10,7 @@ module SingleListDemo =
   open Fable.React
   open Fable.React.Props
   open Elmish
-  open Elmish.DragAndDrop2
+  open Elmish.DragAndDrop
 
   type Model = {
     /// Stores information for the Drag & Drop internal state
@@ -62,6 +62,7 @@ module SingleListDemo =
         PointerEvents "None"
       ]
   }
+  let dragAndDropCategoryKey = "default-category"
 
   let view model (dispatch : Msg -> unit) =
     let dispatch = (mappedMsg >> dispatch)
@@ -69,7 +70,7 @@ module SingleListDemo =
     let dropAreaContent =
       // get all the element Ids in a single list.
       // we don't have multiple categories to concern ourselves with.
-      model.DragAndDrop.ElementIdsSingleList()
+      model.DragAndDrop.ElementIdsForCategorySingleList dragAndDropCategoryKey
       // we collect here because sometimes the Draggable returns multiple items
       |> List.collect(fun id ->
         // look up the content in our model's content map
@@ -78,6 +79,7 @@ module SingleListDemo =
         // create the draggable
         Draggable.SelfHandle
           model.DragAndDrop
+          dragAndDropCategoryKey
           dragAndDropConfig
           dispatch
           id
@@ -100,6 +102,7 @@ module SingleListDemo =
     let dropArea =
       DropArea.DropArea 
         model.DragAndDrop
+        dragAndDropCategoryKey
         dragAndDropConfig
         (MouseEventHandlers.Empty())
         dispatch
@@ -116,7 +119,7 @@ module SingleListDemo =
         Width "100%"
       ]
     ]
-    DragDropContext.Context model.DragAndDrop dispatch div props [dropArea]
+    DragDropContext.Context model.DragAndDrop dragAndDropCategoryKey dispatch div props [dropArea]
 
   let update msg model =
     match msg with
@@ -126,5 +129,5 @@ module SingleListDemo =
       let dndModel = DragAndDropModel.createWithItems ids
       { model with DragAndDrop = dndModel }, Cmd.none
     | DndMsg msg ->
-      let dndModel, cmd = dragAndDropUpdate msg model.DragAndDrop
+      let dndModel, cmd = dragAndDropUpdate msg dragAndDropCategoryKey model.DragAndDrop
       { model with DragAndDrop = dndModel }, Cmd.map DndMsg cmd

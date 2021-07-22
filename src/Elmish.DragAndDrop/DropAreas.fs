@@ -1,4 +1,4 @@
-namespace Elmish.DragAndDrop2
+namespace Elmish.DragAndDrop
 
 open Elmish
 open Elmish.DragAndDropHelpers
@@ -6,7 +6,7 @@ open Elmish.DragAndDropHelpers.HelperTypes
 open Elmish.Throttle
 open Fable.React
 open Fable.React.Props
-open Elmish.DragAndDrop2
+open Elmish.DragAndDrop
 
 [<AutoOpen>]
 module DropAreas =
@@ -16,17 +16,17 @@ module DropAreas =
     []
 
   type DropArea =
-    static member DropArea model config (mouseFuncs : MouseEventHandlers) dispatch id tag props content =
+    static member DropArea model (categoryKey: DragAndDropCategoryKey) config (mouseFuncs : MouseEventHandlers) dispatch id tag props content =
       match model.Moving with
       | None ->
         tag props content
-      | Some { StartLocation = (_, _, draggedElementId ) } ->
+      | Some { StartLocation = (key, _, _, draggedElementId ) } when key = categoryKey ->
         let hoverFunc : MouseEventWithThrottle =
           fun ev throttleId ->
             mouseFuncs.GetOnHoverEnter() ev draggedElementId throttleId
         let listeners  : IHTMLProp list = [
-          Listeners.nonDraggableHoverListenerWithFunc model id dispatch hoverFunc config.MoveThrottleTimeMs
-          Listeners.releaseListenerWithFunc (mouseFuncs.GetOnDrop()) draggedElementId dispatch
+          Listeners.nonDraggableHoverListenerWithFunc model categoryKey id dispatch hoverFunc config.MoveThrottleTimeMs
+          Listeners.releaseListenerWithFunc categoryKey (mouseFuncs.GetOnDrop()) draggedElementId dispatch
         ]
         let props = props @ listeners
         let content =
@@ -34,11 +34,12 @@ module DropAreas =
           | Some { Styles = phStyles; Props = phProps; Content = phContent } -> 
             let phId = id + "-placeholder"
             let phProps = phProps @ [ Id phId ]
-            let handle = Draggable.SelfHandle model config dispatch phId div phStyles phProps phContent
+            let handle = Draggable.SelfHandle model categoryKey config dispatch phId div phStyles phProps phContent
             content @ handle
           | None -> content 
 
         tag props content
+      | Some { StartLocation = (key, _, _, _) } when key <> categoryKey -> tag props content
 
 
   // ************************************************************************************
@@ -46,28 +47,29 @@ module DropAreas =
   // ************************************************************************************
 
   type DragDropContext =
-    static member Context model dispatch tag (props : IHTMLProp list) content =
+    static member Context model key dispatch tag (props : IHTMLProp list) content =
       match model.Moving with
       | None ->
         tag props content
       | Some _ ->
         let props = [
           yield! props
-          Listeners.defaultReleaseListener dispatch
-          Listeners.defaultMouseMoveListener dispatch
+          Listeners.defaultReleaseListener key dispatch
+          Listeners.defaultMouseMoveListener key dispatch
         ]
         tag props content
 
     static member MultipleModels (models : DragAndDropModel list) dispatch (tag : Tag) (props : Props) content =
-      let anyMoving = models |> List.exists (fun m -> m.Moving.IsSome)
-      if anyMoving then
+      let anyMoving = models |> List.choose (fun m -> m.Moving) |> List.tryHead
+      match anyMoving with
+      | Some { CategoryKey = key } ->
         let props = [
           yield! props
-          Listeners.defaultReleaseListener dispatch
-          Listeners.defaultMouseMoveListener dispatch
+          Listeners.defaultReleaseListener key dispatch
+          Listeners.defaultMouseMoveListener key dispatch
         ]
         tag props content
-      else
+      | None ->
         tag props content
 
   // ************************************************************************************
@@ -78,8 +80,8 @@ module DropAreas =
   module internal ItemMoving =
     open Fable.Core
 
-    let private moveItemSameList listIndex startIndex insertAtIndex li =
-      match List.tryItem listIndex li with
+    let private moveItemSameList listIndex startIndex insertAtIndex listIndexes =
+      match Map.tryFind listIndex listIndexes with
       | Some innerList ->
         // if we're inserting an item at a later point in the list...
         if startIndex < insertAtIndex then
@@ -90,7 +92,7 @@ module DropAreas =
           // this middle section should be 2 items - split it & swap them
           let x, y = List.split 1 middle
           let newList = beginning @ y @ x @ _end
-          List.replaceAt newList listIndex li
+          Map.add listIndex newList listIndexes
         // otherwise we're inserting at an earlier point in the list...
         elif startIndex > insertAtIndex then
           // grab everything up to the start
@@ -99,59 +101,118 @@ module DropAreas =
           let middle, _end = List.split (startIndex - insertAtIndex) rest
           let head, tail = List.split 1 _end
           let newList = beginning @ head @ middle @ tail
-          List.replaceAt newList listIndex li
+          Map.add listIndex newList listIndexes
         else
-          li
+          listIndexes
       | None ->
         JS.console.error("Unreachable state: cannot find list at index", listIndex)
-        li
+        listIndexes
 
-    let moveItem (startListIndex, startIndex) (insertListIndex, insertAtIndex) li =
+    // let private moveItemSameList listIndex startIndex insertAtIndex li =
+    //   match List.tryItem listIndex li with
+    //   | Some innerList ->
+    //     // if we're inserting an item at a later point in the list...
+    //     if startIndex < insertAtIndex then
+    //       // grab everything up to the start
+    //       let beginning, rest = List.split startIndex innerList
+    //       // grab the middle & end sections
+    //       let middle, _end = List.split (insertAtIndex - startIndex + 1) rest
+    //       // this middle section should be 2 items - split it & swap them
+    //       let x, y = List.split 1 middle
+    //       let newList = beginning @ y @ x @ _end
+    //       List.replaceAt newList listIndex li
+    //     // otherwise we're inserting at an earlier point in the list...
+    //     elif startIndex > insertAtIndex then
+    //       // grab everything up to the start
+    //       let beginning, rest = List.split insertAtIndex innerList
+    //       // grab the end section
+    //       let middle, _end = List.split (startIndex - insertAtIndex) rest
+    //       let head, tail = List.split 1 _end
+    //       let newList = beginning @ head @ middle @ tail
+    //       List.replaceAt newList listIndex li
+    //     else
+    //       li
+    //   | None ->
+    //     JS.console.error("Unreachable state: cannot find list at index", listIndex)
+    //     li
+
+    // let moveItem (startListIndex, startIndex) (insertListIndex, insertAtIndex) li =
+    //   if startListIndex = insertListIndex then
+    //     moveItemSameList startListIndex startIndex insertAtIndex li
+    //   else
+    //     // lists are not the same; grab the item, insert it to the new list, and remove it from the old list
+    //     match List.tryItem startListIndex li, List.tryItem insertListIndex li with
+    //     | Some startList, Some insertList ->
+    //       match List.tryItem startIndex startList with
+    //       | Some item ->
+    //         let newStartList = List.removeAt startIndex startList
+    //         let newInsertList = List.insertAt item insertAtIndex insertList
+
+    //         li
+    //         |> List.replaceAt newStartList startListIndex
+    //         |> List.replaceAt newInsertList insertListIndex
+    //       | None ->
+    //         JS.console.error("Unreachable state: cannot find item in list at index", startListIndex, startIndex)
+    //         li
+    //     | None, _ ->
+    //       JS.console.error("Unreachable state: cannot find list at index", startListIndex)
+    //       li
+    //     | _, None ->
+    //       JS.console.error("Unreachable state: cannot find list at index", insertListIndex)
+    //       li
+  
+    let moveItem (startListIndex, startIndex) (insertListIndex, insertAtIndex) (indexMap : ListIndexTree) =
       if startListIndex = insertListIndex then
-        moveItemSameList startListIndex startIndex insertAtIndex li
+        moveItemSameList startListIndex startIndex insertAtIndex indexMap
       else
         // lists are not the same; grab the item, insert it to the new list, and remove it from the old list
-        match List.tryItem startListIndex li, List.tryItem insertListIndex li with
+        match Map.tryFind startListIndex indexMap, Map.tryFind insertListIndex indexMap with
         | Some startList, Some insertList ->
           match List.tryItem startIndex startList with
           | Some item ->
             let newStartList = List.removeAt startIndex startList
             let newInsertList = List.insertAt item insertAtIndex insertList
 
-            li
-            |> List.replaceAt newStartList startListIndex
-            |> List.replaceAt newInsertList insertListIndex
+            indexMap
+            |> Map.add startListIndex newStartList
+            |> Map.add insertListIndex newInsertList
+            //|> List.replaceAt newStartList startListIndex
+            //|> List.replaceAt newInsertList insertListIndex
           | None ->
             JS.console.error("Unreachable state: cannot find item in list at index", startListIndex, startIndex)
-            li
+            indexMap
         | None, _ ->
           JS.console.error("Unreachable state: cannot find list at index", startListIndex)
-          li
+          indexMap
         | _, None ->
           JS.console.error("Unreachable state: cannot find list at index", insertListIndex)
-          li
-  
-  let dragAndDropUpdate msg (model : DragAndDropModel) =
+          indexMap
+
+  let dragAndDropUpdate msg categoryKey (model : DragAndDropModel) =
     match msg with
     | DragStart (loc, startCoords, offset) ->
-      let movingStatus = MovingStatus.Init (loc) |> Some
+      let movingStatus = MovingStatus.Init categoryKey (loc) |> Some
       { model with Moving = movingStatus; Cursor = startCoords; Offset = Some offset }, Cmd.none
     | DragAndDropMsg.OnDrag coords ->
       {model with Cursor = coords }, Cmd.none
-    | DragOver (listIndex, index, elementId) ->
+    | DragOver (category, listIndex, index, elementId) when category = categoryKey ->
       match model.Moving with
-      | Some { StartLocation = (startList, startIndex, startingElementId) }->
+      | Some { StartLocation = (_, startList, startIndex, startingElementId) }->
         let slide = None //tryGetSlide elementId
-        let items' =
-          ItemMoving.moveItem (startList, startIndex) (listIndex, index) model.Items
-          |> getUpdatedItemLocations
-        let mdl = { model with Items = items' } // |> Model.setSlideOpt slide
-        let newStartLoc = (listIndex, index, startingElementId)
-        (setDragSource newStartLoc mdl), Cmd.none
+        let mdl =
+          DragAndDropModel.getItemsForCategoryOrEmpty categoryKey model
+          |> ItemMoving.moveItem (startList, startIndex) (listIndex, index)
+          //|> getUpdatedItemLocations
+          |> DragAndDropModel.replaceItemsForCategory categoryKey model
+        // let mdl = { model with Items = items' } // |> Model.setSlideOpt slide
+        let newStartLoc = (categoryKey, listIndex, index, startingElementId)
+        (setDragSource categoryKey newStartLoc mdl), Cmd.none
       | None ->
         model, Cmd.none
 
-    | DragOverNonDraggable (listIndex, dropAreaId) ->
+    | DragOver (category, _, _, _) when category <> categoryKey -> model, Cmd.none
+
+    | DragOverNonDraggable (key, listIndex, dropAreaId) ->
       printfn "Drag Over Non Draggable raised for %A" (listIndex, dropAreaId)
       model, Cmd.none
 

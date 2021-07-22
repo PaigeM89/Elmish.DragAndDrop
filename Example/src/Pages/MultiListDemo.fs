@@ -9,7 +9,7 @@ module MultiListDemo =
   open Fable.React
   open Fable.React.Props
   open Elmish
-  open Elmish.DragAndDrop2
+  open Elmish.DragAndDrop
 
   type Model = {
     DragAndDrop : DragAndDropModel
@@ -31,8 +31,9 @@ module MultiListDemo =
       ]
       |> List.mapi (fun i c -> (sprintf "content-%i" i), c)
     let m = Map.ofList allContent
-    let list1, list2 = allContent |> List.map fst |> List.splitAt 5 
+    let list1, list2 = allContent |> List.map fst |> List.splitAt 5
     let dndModel = DragAndDropModel.createWithItemsMultiList [list1;list2]
+    printfn "dnd model is %A" dndModel
     { model with ContentMap = m; DragAndDrop = dndModel }
 
   let init() = 
@@ -74,6 +75,7 @@ module MultiListDemo =
         )
       MoveThrottleTimeMs = Some (System.TimeSpan.FromMilliseconds 500.)
   }
+  let dragAndDropCategoryKey = "default-category"
 
   let createDraggable model elementId dispatch =
     let element =
@@ -81,6 +83,7 @@ module MultiListDemo =
       |> Option.defaultValue (div [] [])
     Draggable.SelfHandle
       model.DragAndDrop
+      dragAndDropCategoryKey
       dragAndDropConfig 
       dispatch
       elementId
@@ -108,19 +111,20 @@ module MultiListDemo =
       ]
     ]
     let dropAreaContent =
-      model.DragAndDrop.ElementIds()
-      |> List.mapi(fun index li ->
-        let props = if index % 2 = 0 then leftDropAreaProps else rightDropAreaProps
+      model.DragAndDrop.ElementIdsForCategory dragAndDropCategoryKey
+      |> List.map(fun (listIndex, li) ->
+        let props = if listIndex % 2 = 0 then leftDropAreaProps else rightDropAreaProps
         li
-        |> List.collect (fun id ->
+        |> List.collect (fun (index, id) ->
           createDraggable model id dispatch
         )
         |> DropArea.DropArea
             model.DragAndDrop
+            dragAndDropCategoryKey
             dragAndDropConfig
             (MouseEventHandlers.Empty())
             dispatch
-            (sprintf "drop-area-%i" index)
+            (sprintf "drop-area-%i" listIndex)
             div
             props
       )
@@ -131,12 +135,12 @@ module MultiListDemo =
         Display DisplayOptions.Flex
       ]
     ]
-    DragDropContext.Context model.DragAndDrop dispatch div contextProps dropAreaContent
+    DragDropContext.Context model.DragAndDrop dragAndDropCategoryKey dispatch div contextProps dropAreaContent
 
   let update msg model =
     match msg with
     | Init ->
       model, Cmd.none
     | DndMsg msg ->
-      let dndModel, cmd = dragAndDropUpdate msg model.DragAndDrop
+      let dndModel, cmd = dragAndDropUpdate msg dragAndDropCategoryKey model.DragAndDrop
       { model with DragAndDrop = dndModel }, Cmd.map DndMsg cmd

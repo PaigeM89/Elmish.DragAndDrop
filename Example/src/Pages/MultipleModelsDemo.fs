@@ -9,7 +9,7 @@ module MultipleModelsDemo =
   open Fable.React
   open Fable.React.Props
   open Elmish
-  open Elmish.DragAndDrop2
+  open Elmish.DragAndDrop
 
   type Genre =
   | Black
@@ -92,6 +92,9 @@ module MultipleModelsDemo =
       ]
       MoveThrottleTimeMs = Some (System.TimeSpan.FromMilliseconds 500.)
   }
+  let bmCategory = "black-metal"
+  let dmCategory = "death-metal"
+  let topTenCategory = "top-ten"
 
   let mappedMsg m = DndMsg m
 
@@ -100,6 +103,7 @@ module MultipleModelsDemo =
     | Black ->
       Draggable.SelfHandle
         model.BlackMetalBandSorting
+        bmCategory
         dragAndDropConfig
         (mappedMsg >> dispatch)
         (string band.Id)
@@ -119,6 +123,7 @@ module MultipleModelsDemo =
     | Death ->
       Draggable.SelfHandle
         model.DeathMetalBandSorting
+        dmCategory
         dragAndDropConfig
         (mappedMsg >> dispatch)
         (string band.Id)
@@ -143,6 +148,7 @@ module MultipleModelsDemo =
       | Death -> "Death metal"
     Draggable.SelfHandle
       model.TopTenBandSorting
+      topTenCategory
       dragAndDropConfig
       (mappedMsg >> dispatch)
       (string band.Id)
@@ -226,10 +232,14 @@ module MultipleModelsDemo =
         topDropArea
       ]
 
-  let update msg model =
-    model, Cmd.none
-    // match msg with
-    // | Init ->
-    //   (Model.Init()), Cmd.none
-    // | DndMsg msg ->
-    //   let dndModel, cmd = dragAndDropUpdate msg model.
+  let update msg (model : Model) =
+    match msg with
+    | Init ->
+      (Model.Init()), Cmd.none
+    | DndMsg msg ->
+      let bmMdl, bmCmd = dragAndDropUpdate msg bmCategory model.BlackMetalBandSorting
+      let dmMdl, dmCmd = dragAndDropUpdate msg dmCategory model.DeathMetalBandSorting
+      let topMdl, topCmd = dragAndDropUpdate msg topTenCategory model.TopTenBandSorting
+      let model = { model with BlackMetalBandSorting = bmMdl; DeathMetalBandSorting = dmMdl; TopTenBandSorting = topMdl }
+      let cmd = [ bmCmd; dmCmd; topCmd ] |> List.map (Cmd.map DndMsg) |> Cmd.batch
+      model, cmd

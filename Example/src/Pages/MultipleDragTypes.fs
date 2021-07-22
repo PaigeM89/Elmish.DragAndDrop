@@ -11,7 +11,7 @@ module MultipleDragTypesDemo =
   open Fable.React
   open Fable.React.Props
   open Elmish
-  open Elmish.DragAndDrop2
+  open Elmish.DragAndDrop
 
   let tryParseGuid str = 
     match Guid.TryParse str with
@@ -128,6 +128,7 @@ module MultipleDragTypesDemo =
       ]
       MoveThrottleTimeMs = Some (System.TimeSpan.FromMilliseconds 500.)
   }
+  let dragAndDropCategoryKey = "default-category"
 
   let renderThing (thing : Thing) =
     let props : IHTMLProp list = [] 
@@ -155,6 +156,7 @@ module MultipleDragTypesDemo =
     ]
     Draggable.SelfHandle
       model.DragAndDrop
+      dragAndDropCategoryKey
       dragAndDropConfig
       (mappedMsg >> dispatch)
       (string thing.Id)
@@ -254,10 +256,10 @@ module MultipleDragTypesDemo =
   let view model dispatch =
     let dndDispatch = mappedMsg >> dispatch
 
-    let things =
-      model.DragAndDrop.ElementIds()
-      |> List.map (fun li -> li |> List.choose tryParseGuid)
-      |> List.map (fun li -> li |> List.choose (Model.getThingByIdR model))
+    let things = []
+      // model.DragAndDrop.ElementIdsForCategory dragAndDropCategoryKey
+      // |> List.map (fun li -> li |> List.choose tryParseGuid)
+      // |> List.map (fun li -> li |> List.choose (Model.getThingByIdR model))
 
     let sourceElements =
       //groupedElements.Ungrouped
@@ -300,14 +302,14 @@ module MultipleDragTypesDemo =
       ]
       ClassName "page-small"
     ]
-    DragDropContext.Context model.DragAndDrop dndDispatch div contextProps [content]
+    DragDropContext.Context model.DragAndDrop dragAndDropCategoryKey dndDispatch div contextProps [content]
 
   let update msg model =
     match msg with
     | Init ->
       model, Cmd.none
     | DndMsg msg ->
-      let dndModel, cmd = dragAndDropUpdate msg model.DragAndDrop
+      let dndModel, cmd = dragAndDropUpdate msg dragAndDropCategoryKey model.DragAndDrop
       { model with DragAndDrop = dndModel }, Cmd.map DndMsg cmd
     | IsValidDrop(elementId, hoveredOverId) -> failwith "Not Implemented"
     | IsInvalidDrop(elementId, hoverOverId) -> failwith "Not Implemented"

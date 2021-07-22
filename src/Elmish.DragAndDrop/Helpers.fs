@@ -55,6 +55,10 @@ module List =
 module HelperTypes =
   type ElementId = string
   type DraggableId = string
+  type DropAreaId = string
+  type ListIndex = int
+  type Index = int
+  type DragAndDropCategoryKey = string
 
   type Coords = { x : float; y : float}
       with
@@ -72,12 +76,11 @@ module HelperTypes =
   let coords x y = { x = x; y = y }
   let fromME (ev : Browser.Types.MouseEvent) = { x = ev.clientX; y = ev.clientY }
 
-  type ListIndex = int
-  type Index = int
-  type ItemLocation = ListIndex * Index * ElementId
-  let locListIndex = fun (x, _, _) -> x
-  let locIndex = fun (_, x, _) -> x
-  let locId = fun (_, _, id) -> id
+  type ItemLocation = DragAndDropCategoryKey * ListIndex * Index * ElementId
+  let locKey = fun (k, _, _, _) -> k
+  let locListIndex = fun (_, x, _, _) -> x
+  let locIndex = fun (_, _, x, _) -> x
+  let locId = fun (_, _, _, id) -> id
   let createLoc a b c = (a, b, c)
 
   let tryGetElementCoords elementId = 
@@ -98,18 +101,21 @@ module HelperTypes =
       StartCoords = s
       ElementId = ele
     }
-
-  type DropAreaId = string
-  type CurrentDropArea = ListIndex * DropAreaId option
+  
+  [<Literal>]
+  let DefaultCategory :DragAndDropCategoryKey = "default-category"
 
   type MovingStatus = {
       Slide : Slide option
       StartLocation : ItemLocation
-      CurrentDropArea : CurrentDropArea option
+      CategoryKey : DragAndDropCategoryKey
+      // CurrentDropArea : CurrentDropArea option
     } with
-        member this.SetSlide (slide : Slide option) = { this with Slide = slide }
-        static member Init loc =
-          { Slide = None; StartLocation = loc; CurrentDropArea = Some (locListIndex loc, None) }
+        static member Init key loc =
+          { CategoryKey = key; StartLocation = loc; Slide = None }
+        // member this.SetSlide (slide : Slide option) = { this with Slide = slide }
+        // static member Init loc =
+        //  { Slide = None; StartLocation = loc; CurrentDropArea = Some (locListIndex loc, None) }
 
 
 module BrowserHelpers =

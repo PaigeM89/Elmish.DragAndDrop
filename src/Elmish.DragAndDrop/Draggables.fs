@@ -1,4 +1,4 @@
-namespace Elmish.DragAndDrop2
+namespace Elmish.DragAndDrop
 
 open Elmish
 open Elmish.DragAndDropHelpers
@@ -6,7 +6,7 @@ open Elmish.DragAndDropHelpers.HelperTypes
 open Elmish.Throttle
 open Fable.React
 open Fable.React.Props
-open Elmish.DragAndDrop2
+open Elmish.DragAndDrop
 
 [<AutoOpen>]
 module Draggables = 
@@ -14,11 +14,11 @@ module Draggables =
   let private idProp id = Id id :> IHTMLProp
 
   type DragHandle =
-    static member Handle model (id : DraggableId) dispatch tag props content =
+    static member Handle model (categoryKey : DragAndDropCategoryKey) (id : DraggableId) dispatch tag props content =
       match model.Moving with
       | None ->
         // no active drag; add a listener for a mouse down event
-        let listener = (Listeners.defaultMouseDownListener model id dispatch) :> IHTMLProp
+        let listener = (Listeners.defaultMouseDownListener model categoryKey id dispatch) :> IHTMLProp
         // add this listener last so it overrides any instances of the same prop.
         tag (props @ [listener]) content
       | Some _ ->
@@ -58,38 +58,38 @@ module Draggables =
     tag (style :: props) content
 
   type Draggable =
-    static member SelfHandle model config dispatch id (tag : Tag) styles props content =
+    static member SelfHandle model (categoryKey : DragAndDropCategoryKey) config dispatch id (tag : Tag) styles props content =
       match model.Moving with
       | None ->
         // no drag in progress, render with mouse down listener
         let props : IHTMLProp list = ((Style styles) :> IHTMLProp) :: props 
-        let handle = DragHandle.Handle model id dispatch tag props content
+        let handle = DragHandle.Handle model categoryKey id dispatch tag props content
         [ handle ]
-      | Some { StartLocation = (_, _, draggedElementId )} ->
+      | Some { StartLocation = (_, _, _, draggedElementId )} ->
         if id = draggedElementId then
           let preview = buildHoverPreview config id tag styles props content
           let dragged = buildDragged config model id tag styles props content
           [ preview; dragged ]
         else
-          let listener = Listeners.defaultHoverListener model id dispatch config.MoveThrottleTimeMs :> IHTMLProp
+          let listener = Listeners.defaultHoverListener model categoryKey id dispatch config.MoveThrottleTimeMs :> IHTMLProp
           let styles = (config.ListenerElementStyles |> orEmpty) @ styles |> Style :> IHTMLProp
           // added in this order specifically; listener overrides props overrides config
           let props = (config.ListenerElementProperties |> orEmpty) @ props @ [ listener ]
           [tag (styles :: props) content]
 
-    static member InnerHandle model config dispatch id (tag : Tag) styles props content =
+    static member InnerHandle model (categoryKey : DragAndDropCategoryKey) config dispatch id (tag : Tag) styles props content =
       match model.Moving with
       | None ->
         //no drags in progress, render the content
         let props : IHTMLProp list = [ yield! props; Style styles ]
         [tag props content]
-      | Some { StartLocation = (_, _, draggedElementId )} ->
+      | Some { StartLocation = (_, _, _, draggedElementId )} ->
         if id = draggedElementId then
           let preview = buildHoverPreview config id tag styles props content
           let dragged = buildDragged config model id tag styles props content
           [ preview; dragged ]
         else
-          let listener = Listeners.defaultHoverListener model id dispatch config.MoveThrottleTimeMs :> IHTMLProp
+          let listener = Listeners.defaultHoverListener model categoryKey id dispatch config.MoveThrottleTimeMs :> IHTMLProp
           let styles = (config.ListenerElementStyles |> orEmpty) @ styles |> Style :> IHTMLProp
           // added in this order specifically; listener overrides props overrides config
           let props = (config.ListenerElementProperties |> orEmpty) @ props @ [ listener ]

@@ -12,7 +12,7 @@ module TableDemo =
   open Fable.React
   open Fable.React.Props
   open Elmish
-  open Elmish.DragAndDrop2
+  open Elmish.DragAndDrop
 
   let parseIntOrZero str =
     match Int32.TryParse str with
@@ -82,6 +82,7 @@ module TableDemo =
         Opacity 0.2
       ]
   }
+  let dragAndDropCategoryKey = "default-category"
 
   module View =
 
@@ -94,6 +95,7 @@ module TableDemo =
           td [] [
             DragHandle.Handle
               model.DragAndDrop
+              dragAndDropCategoryKey
               rowId
               (dndMsg >> dispatch)
               div
@@ -132,13 +134,14 @@ module TableDemo =
           ]
       ]
       |> Draggable.InnerHandle
-        model.DragAndDrop
-        dragAndDropConfig
-        (dndMsg >> dispatch)
-        rowId
-        tr
-        []
-        [ Id rowId ]
+          model.DragAndDrop
+          dragAndDropCategoryKey
+          dragAndDropConfig
+          (dndMsg >> dispatch)
+          rowId
+          tr
+          []
+          [ Id rowId ]
 
     let addRowButton dispatch = 
       button [
@@ -181,7 +184,7 @@ module TableDemo =
         ]
 
       let rows =
-        model.DragAndDrop.ElementIdsSingleList()
+        model.DragAndDrop.ElementIdsForCategorySingleList dragAndDropCategoryKey
         |> List.mapi (fun index id ->
           let cv = model.ContentMap |> Map.find id
           createTableRow model dispatch index cv
@@ -201,6 +204,7 @@ module TableDemo =
           tableHeaders
           DropArea.DropArea 
             model.DragAndDrop
+            dragAndDropCategoryKey
             dragAndDropConfig
             (MouseEventHandlers.Empty())
             (dndMsg >> dispatch)
@@ -224,16 +228,16 @@ module TableDemo =
         table
       ]
 
-      DragDropContext.Context model.DragAndDrop (DndMsg >> dispatch) div props content
+      DragDropContext.Context model.DragAndDrop dragAndDropCategoryKey (DndMsg >> dispatch) div props content
   
   let addContent model cv =
     let dict = model.ContentMap |> Map.add (string cv.ContentId) cv
-    let dnd = DragAndDropModel.insertNewItemAtHead 0 (string cv.ContentId) model.DragAndDrop
+    let dnd = DragAndDropModel.insertNewItemAtHead dragAndDropCategoryKey 0 (string cv.ContentId) model.DragAndDrop
     { model with ContentMap = dict; DragAndDrop = dnd }
 
   let removeContent model id =
     let m = model.ContentMap |> Map.remove (string id)
-    let dnd = DragAndDropModel.removeItem (string id) model.DragAndDrop
+    let dnd = DragAndDropModel.removeItem dragAndDropCategoryKey (string id) model.DragAndDrop
     { model with ContentMap = m; DragAndDrop = dnd }
 
   let update msg model =
@@ -243,7 +247,7 @@ module TableDemo =
     | InitWithSampleData ->
       (initWithSampleData()), Cmd.none
     | DndMsg msg ->
-      let dndModel, cmd = dragAndDropUpdate msg model.DragAndDrop
+      let dndModel, cmd = dragAndDropUpdate msg dragAndDropCategoryKey model.DragAndDrop
       { model with DragAndDrop = dndModel }, Cmd.map DndMsg cmd
     | AddRow ->
       let row = ContentValue.Empty()

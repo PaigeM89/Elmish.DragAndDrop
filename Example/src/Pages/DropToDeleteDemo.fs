@@ -4,7 +4,7 @@ module DropToDeleteDemo =
   open Fable.React
   open Fable.React.Props
   open Elmish
-  open Elmish.DragAndDrop2
+  open Elmish.DragAndDrop
 
   type DeleteAction = 
   | Hover of elementId : string
@@ -55,6 +55,7 @@ module DropToDeleteDemo =
         PointerEvents "None"
       ]
   }
+  let dragAndDropCategoryKey = "default-category"
 
   let createInitButton dispatch =
     let prop = OnClick (fun ev -> ev.preventDefault(); Init |> dispatch)
@@ -72,6 +73,7 @@ module DropToDeleteDemo =
     let handleId = rootElementId + "-handle"
     DragHandle.Handle
       model.DragAndDrop
+      dragAndDropCategoryKey
       rootElementId
       (mappedMsg >> dispatch)
       div
@@ -84,6 +86,7 @@ module DropToDeleteDemo =
     let handle = createDragHandle model rootId dispatch
     Draggable.InnerHandle
       model.DragAndDrop
+      dragAndDropCategoryKey
       dragAndDropConfig
       (mappedMsg >> dispatch)
       rootId
@@ -114,6 +117,7 @@ module DropToDeleteDemo =
     ]
     DropArea.DropArea
       model.DragAndDrop
+      dragAndDropCategoryKey
       dragAndDropConfig
       mouseEventFuncs
       (mappedMsg >> dispatch)
@@ -141,12 +145,13 @@ module DropToDeleteDemo =
     let dropArea =
       // note that element Ids are always a list of lists, to accomodate multiple categories.
       // see the Multi List Demo for an example of that.
-      model.DragAndDrop.ElementIdsSingleList()
+      model.DragAndDrop.ElementIdsForCategorySingleList dragAndDropCategoryKey
       |> List.collect(fun id ->
           createDraggable model id dispatch
       )
       |> DropArea.DropArea
             model.DragAndDrop
+            dragAndDropCategoryKey
             dragAndDropConfig
             (MouseEventHandlers.Empty())
             (mappedMsg >> dispatch)
@@ -174,7 +179,7 @@ module DropToDeleteDemo =
         deleteDropArea
       ]
     ]
-    DragDropContext.Context model.DragAndDrop (mappedMsg >> dispatch) div props content
+    DragDropContext.Context model.DragAndDrop dragAndDropCategoryKey (mappedMsg >> dispatch) div props content
 
   let update msg model =
     match msg with
@@ -185,10 +190,10 @@ module DropToDeleteDemo =
       let dndModel = DragAndDropModel.createWithItems ids
       { model with DragAndDrop = dndModel; DeleteAction = None }, Cmd.none
     | DndMsg (DragEnd) ->
-      let dndModel, cmd = dragAndDropUpdate (DragEnd) model.DragAndDrop
+      let dndModel, cmd = dragAndDropUpdate (DragEnd) dragAndDropCategoryKey model.DragAndDrop
       { model with DragAndDrop = dndModel; DeleteAction = None }, Cmd.map DndMsg cmd
     | DndMsg msg ->
-      let dndModel, cmd = dragAndDropUpdate msg model.DragAndDrop
+      let dndModel, cmd = dragAndDropUpdate msg dragAndDropCategoryKey model.DragAndDrop
       { model with DragAndDrop = dndModel }, Cmd.map DndMsg cmd
     | HoverOverDelete hoverElementId ->
       printfn "hover over delete msg: %A" hoverElementId
@@ -197,5 +202,5 @@ module DropToDeleteDemo =
     | Deleted deletedId ->
       let a = DeleteAction.Deleted deletedId
       let items = model.ContentMap |> Map.remove deletedId
-      let dnd = model.DragAndDrop |> DragAndDropModel.removeItem deletedId
+      let dnd = model.DragAndDrop |> DragAndDropModel.removeItem dragAndDropCategoryKey deletedId
       { model with DeleteAction = Some a; ContentMap = items; DragAndDrop = dnd}, Cmd.none

@@ -11,7 +11,7 @@ module HandlesDemo =
   open Fable.React
   open Fable.React.Props
   open Elmish
-  open Elmish.DragAndDrop2
+  open Elmish.DragAndDrop
 
   type ContentKey = string
   type ContentType =
@@ -68,6 +68,7 @@ module HandlesDemo =
     Width 300
     MinHeight 50
   ]
+  let dragAndDropCategoryKey = "default-category"
 
   let inputValueLookup model elementId =
     Map.tryFind elementId model.ContentMap
@@ -81,6 +82,7 @@ module HandlesDemo =
       [
         DragHandle.Handle
                 dndModel
+                dragAndDropCategoryKey
                 rootElementId
                 (mappedMsg >> dispatch)
                 div
@@ -97,7 +99,8 @@ module HandlesDemo =
         ]
       ]
       |> Draggable.InnerHandle
-            dndModel 
+            dndModel
+            dragAndDropCategoryKey
             dragAndDropConfig
             (mappedMsg >> dispatch)
             rootElementId
@@ -109,6 +112,7 @@ module HandlesDemo =
         yield! 
           Draggable.SelfHandle
             dndModel
+            dragAndDropCategoryKey
             dragAndDropConfig
             (mappedMsg >> dispatch)
             rootElementId
@@ -127,6 +131,7 @@ module HandlesDemo =
       [
         DragHandle.Handle
                 dndModel
+                dragAndDropCategoryKey
                 rootElementId
                 (mappedMsg >> dispatch)
                 div
@@ -146,6 +151,7 @@ module HandlesDemo =
       [
         DragHandle.Handle
           dndModel
+          dragAndDropCategoryKey
           rootElementId
           (mappedMsg >> dispatch)
           div
@@ -160,7 +166,8 @@ module HandlesDemo =
     let handleStyles = if dndModel.Moving.IsSome then [] else [ Cursor "grab" ]
     generateHandlesAndContent dndModel handleStyles rootElementId dispatch value
     |> Draggable.InnerHandle
-            dndModel 
+            dndModel
+            dragAndDropCategoryKey
             dragAndDropConfig
             (mappedMsg >> dispatch)
             rootElementId
@@ -178,20 +185,21 @@ module HandlesDemo =
       ]
     ]
     let dropAreaContent =
-      model.DragAndDrop.ElementIdsSingleList()
+      model.DragAndDrop.ElementIdsForCategorySingleList dragAndDropCategoryKey
       |> List.collect (fun (rootElementId) ->
         inputValueLookup model rootElementId
         |> createContent model.DragAndDrop rootElementId dispatch
       )
       |> DropArea.DropArea 
           model.DragAndDrop
+          dragAndDropCategoryKey
           dragAndDropConfig
           (MouseEventHandlers.Empty())
           (mappedMsg >> dispatch)
           "drop-area"
           div
           dropAreaProps
-    DragDropContext.Context model.DragAndDrop (mappedMsg >> dispatch)
+    DragDropContext.Context model.DragAndDrop dragAndDropCategoryKey (mappedMsg >> dispatch)
       div [
         Style [
           Background "#0066ff"
@@ -217,7 +225,7 @@ module HandlesDemo =
       let dndModel = DragAndDropModel.createWithItems elementIds
       { model with DragAndDrop = dndModel; ContentMap = m }, Cmd.none
     | DndMsg msg ->
-      let dndModel, cmd = dragAndDropUpdate msg model.DragAndDrop
+      let dndModel, cmd = dragAndDropUpdate msg dragAndDropCategoryKey model.DragAndDrop
       { model with DragAndDrop = dndModel }, Cmd.map DndMsg cmd
     | InputChange (elementId, newValue) ->
       match Map.tryFind elementId model.ContentMap with
