@@ -179,7 +179,7 @@ module DropToDeleteDemo =
         deleteDropArea
       ]
     ]
-    DragDropContext.Context model.DragAndDrop dragAndDropCategoryKey (mappedMsg >> dispatch) div props content
+    DragDropContext.Context model.DragAndDrop (mappedMsg >> dispatch) div props content
 
   let update msg model =
     match msg with
@@ -190,10 +190,10 @@ module DropToDeleteDemo =
       let dndModel = DragAndDropModel.createWithItems ids
       { model with DragAndDrop = dndModel; DeleteAction = None }, Cmd.none
     | DndMsg (DragEnd) ->
-      let dndModel, cmd = dragAndDropUpdate (DragEnd) dragAndDropCategoryKey model.DragAndDrop
+      let dndModel, cmd = dragAndDropUpdate (DragEnd) model.DragAndDrop
       { model with DragAndDrop = dndModel; DeleteAction = None }, Cmd.map DndMsg cmd
     | DndMsg msg ->
-      let dndModel, cmd = dragAndDropUpdate msg dragAndDropCategoryKey model.DragAndDrop
+      let dndModel, cmd = dragAndDropUpdate msg model.DragAndDrop
       { model with DragAndDrop = dndModel }, Cmd.map DndMsg cmd
     | HoverOverDelete hoverElementId ->
       printfn "hover over delete msg: %A" hoverElementId

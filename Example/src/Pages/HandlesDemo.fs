@@ -199,7 +199,7 @@ module HandlesDemo =
           "drop-area"
           div
           dropAreaProps
-    DragDropContext.Context model.DragAndDrop dragAndDropCategoryKey (mappedMsg >> dispatch)
+    DragDropContext.Context model.DragAndDrop (mappedMsg >> dispatch)
       div [
         Style [
           Background "#0066ff"
@@ -225,7 +225,7 @@ module HandlesDemo =
       let dndModel = DragAndDropModel.createWithItems elementIds
       { model with DragAndDrop = dndModel; ContentMap = m }, Cmd.none
     | DndMsg msg ->
-      let dndModel, cmd = dragAndDropUpdate msg dragAndDropCategoryKey model.DragAndDrop
+      let dndModel, cmd = dragAndDropUpdate msg model.DragAndDrop
       { model with DragAndDrop = dndModel }, Cmd.map DndMsg cmd
     | InputChange (elementId, newValue) ->
       match Map.tryFind elementId model.ContentMap with

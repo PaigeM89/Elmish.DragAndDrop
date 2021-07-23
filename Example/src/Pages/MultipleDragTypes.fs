@@ -302,14 +302,14 @@ module MultipleDragTypesDemo =
       ]
       ClassName "page-small"
     ]
-    DragDropContext.Context model.DragAndDrop dragAndDropCategoryKey dndDispatch div contextProps [content]
+    DragDropContext.Context model.DragAndDrop dndDispatch div contextProps [content]
 
   let update msg model =
     match msg with
     | Init ->
       model, Cmd.none
     | DndMsg msg ->
-      let dndModel, cmd = dragAndDropUpdate msg dragAndDropCategoryKey model.DragAndDrop
+      let dndModel, cmd = dragAndDropUpdate msg model.DragAndDrop
       { model with DragAndDrop = dndModel }, Cmd.map DndMsg cmd
     | IsValidDrop(elementId, hoveredOverId) -> failwith "Not Implemented"
     | IsInvalidDrop(elementId, hoverOverId) -> failwith "Not Implemented"

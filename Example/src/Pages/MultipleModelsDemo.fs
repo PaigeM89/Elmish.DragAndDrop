@@ -26,12 +26,20 @@ module MultipleModelsDemo =
       Genre = genre
     }
 
+  [<Literal>]
+  let BlackMetalBandSorting = "black-metal-category"
+  [<Literal>]
+  let DeathMetalBandSorting = "death-metal-category"
+  [<Literal>]
+  let TopTenBandSorting = "top-ten-category"
+
   type Model = {
-    BlackMetalBandSorting : DragAndDropModel
+    DragAndDrop : DragAndDropModel
+    //BlackMetalBandSorting : DragAndDropModel
     BlackMetalBands : Map<Guid, Band>
-    DeathMetalBandSorting : DragAndDropModel
+    //DeathMetalBandSorting : DragAndDropModel
     DeathMetalBands : Map<Guid, Band>
-    TopTenBandSorting : DragAndDropModel
+    //TopTenBandSorting : DragAndDropModel
     TopTenBands : Map<Guid, Band>
   } with
     static member Init() = 
@@ -63,13 +71,20 @@ module MultipleModelsDemo =
         let top5BM = blackMetalBands |> List.take 5
         let top5DM = deathMetalBands |> List.take 5
         top5BM @ top5DM
+      let dnd = DragAndDropModel.createWithCategoriesAndItems [
+        BlackMetalBandSorting, [blackMetalBands |> List.map (fun b -> string b.Id)]
+        DeathMetalBandSorting, [ deathMetalBands |> List.map (fun b -> string b.Id) ]
+        TopTenBandSorting, [ topten |> List.map (fun b -> string b.Id) ]
+      ]
+      printfn "dragn and drop tree after init is %A" dnd.ItemTree
       {
-        BlackMetalBandSorting = DragAndDropModel.createWithItems (blackMetalBands |> List.map (fun b -> b.Id |> string ))
+        //BlackMetalBandSorting = DragAndDropModel.createWithItems (blackMetalBands |> List.map (fun b -> b.Id |> string ))
         BlackMetalBands = blackMetalBands |> List.map (fun x -> x.Id, x) |> Map.ofList
-        DeathMetalBandSorting = DragAndDropModel.createWithItems (deathMetalBands |> List.map (fun b -> b.Id |> string))
+        //DeathMetalBandSorting = DragAndDropModel.createWithItems (deathMetalBands |> List.map (fun b -> b.Id |> string))
         DeathMetalBands = deathMetalBands |> List.map (fun x -> x.Id, x) |> Map.ofList
-        TopTenBandSorting = DragAndDropModel.createWithItems (topten |> List.map (fun b -> b.Id |> string))
+        //TopTenBandSorting = DragAndDropModel.createWithItems (topten |> List.map (fun b -> b.Id |> string))
         TopTenBands = topten |> List.map(fun b -> b.Id, b) |> Map.ofList
+        DragAndDrop = dnd
       }
 
   type Msg =
@@ -92,9 +107,6 @@ module MultipleModelsDemo =
       ]
       MoveThrottleTimeMs = Some (System.TimeSpan.FromMilliseconds 500.)
   }
-  let bmCategory = "black-metal"
-  let dmCategory = "death-metal"
-  let topTenCategory = "top-ten"
 
   let mappedMsg m = DndMsg m
 
@@ -102,8 +114,8 @@ module MultipleModelsDemo =
     match band.Genre with
     | Black ->
       Draggable.SelfHandle
-        model.BlackMetalBandSorting
-        bmCategory
+        model.DragAndDrop
+        BlackMetalBandSorting
         dragAndDropConfig
         (mappedMsg >> dispatch)
         (string band.Id)
@@ -119,11 +131,12 @@ module MultipleModelsDemo =
         [
           h3 [] [ str band.Name ]
           p [] [ str "Black metal" ]
+          p [] [ str (string band.Id) ]
         ]
     | Death ->
       Draggable.SelfHandle
-        model.DeathMetalBandSorting
-        dmCategory
+        model.DragAndDrop
+        DeathMetalBandSorting
         dragAndDropConfig
         (mappedMsg >> dispatch)
         (string band.Id)
@@ -139,6 +152,7 @@ module MultipleModelsDemo =
         [
           h3 [] [ str band.Name ]
           p [] [ str "Death metal" ]
+          p [] [ str (string band.Id) ]
         ]
 
   let renderTopBandDraggable model dispatch (band : Band) =
@@ -147,8 +161,8 @@ module MultipleModelsDemo =
       | Black -> "Black metal"
       | Death -> "Death metal"
     Draggable.SelfHandle
-      model.TopTenBandSorting
-      topTenCategory
+      model.DragAndDrop
+      TopTenBandSorting
       dragAndDropConfig
       (mappedMsg >> dispatch)
       (string band.Id)
@@ -164,6 +178,7 @@ module MultipleModelsDemo =
       [
         h3 [] [ str band.Name ]
         p [] [ str genre ]
+        p [] [ str (string band.Id) ]
       ]
 
   let blackMetalDropArea model dispatch =
@@ -220,9 +235,8 @@ module MultipleModelsDemo =
       ]
       ClassName "page-small"
     ]
-    let dndModels = [ model.BlackMetalBandSorting; model.DeathMetalBandSorting; model.TopTenBandSorting ]
-    DragDropContext.MultipleModels
-      dndModels
+    DragDropContext.Context
+      model.DragAndDrop
       (mappedMsg >> dispatch)
       div
       contextProps
@@ -237,9 +251,10 @@ module MultipleModelsDemo =
     | Init ->
       (Model.Init()), Cmd.none
     | DndMsg msg ->
-      let bmMdl, bmCmd = dragAndDropUpdate msg bmCategory model.BlackMetalBandSorting
-      let dmMdl, dmCmd = dragAndDropUpdate msg dmCategory model.DeathMetalBandSorting
-      let topMdl, topCmd = dragAndDropUpdate msg topTenCategory model.TopTenBandSorting
-      let model = { model with BlackMetalBandSorting = bmMdl; DeathMetalBandSorting = dmMdl; TopTenBandSorting = topMdl }
-      let cmd = [ bmCmd; dmCmd; topCmd ] |> List.map (Cmd.map DndMsg) |> Cmd.batch
-      model, cmd
+      // let bmMdl, bmCmd = dragAndDropUpdate msg bmCategory model.DragAndDrop
+      // let dmMdl, dmCmd = dragAndDropUpdate msg dmCategory model.DragAndDrop
+      // let topMdl, topCmd = dragAndDropUpdate msg topTenCategory model.DragAndDrop
+      let dndMdl, cmd = dragAndDropUpdate msg model.DragAndDrop
+      let model = { model with DragAndDrop = dndMdl }
+      //let cmd = [ bmCmd; dmCmd; topCmd ] |> List.map (Cmd.map DndMsg) |> Cmd.batch
+      model, Cmd.map DndMsg cmd

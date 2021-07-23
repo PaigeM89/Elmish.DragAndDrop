@@ -119,7 +119,7 @@ module SingleListDemo =
         Width "100%"
       ]
     ]
-    DragDropContext.Context model.DragAndDrop dragAndDropCategoryKey dispatch div props [dropArea]
+    DragDropContext.Context model.DragAndDrop dispatch div props [dropArea]
 
   let update msg model =
     match msg with
@@ -129,5 +129,5 @@ module SingleListDemo =
       let dndModel = DragAndDropModel.createWithItems ids
       { model with DragAndDrop = dndModel }, Cmd.none
     | DndMsg msg ->
-      let dndModel, cmd = dragAndDropUpdate msg dragAndDropCategoryKey model.DragAndDrop
+      let dndModel, cmd = dragAndDropUpdate msg model.DragAndDrop
       { model with DragAndDrop = dndModel }, Cmd.map DndMsg cmd

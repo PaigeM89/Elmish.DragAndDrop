@@ -18,6 +18,7 @@ module internal Listeners =
   /// _the id of the element to move_, which does not have to be the id of the element being clicked.
   /// For example, this could be the id of a parent element, where one of the child elements is a "handle".
   let defaultMouseDownListener model key (draggableId : DraggableId) dispatch =
+    printfn "default mouse down listener for category  %A and draggable %A" key draggableId
     let loc = getLocationForElement key draggableId model
     match loc with
     | Some loc ->

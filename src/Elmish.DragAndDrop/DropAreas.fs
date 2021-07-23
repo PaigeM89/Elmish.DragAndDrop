@@ -48,11 +48,11 @@ module DropAreas =
   // ************************************************************************************
 
   type DragDropContext =
-    static member Context model key dispatch tag (props : IHTMLProp list) content =
+    static member Context model dispatch tag (props : IHTMLProp list) content =
       match model.Moving with
       | None ->
         tag props content
-      | Some _ ->
+      | Some ({ StartLocation = (key, _, _, _)}) ->
         let props = [
           yield! props
           Listeners.defaultReleaseListener key dispatch
@@ -60,18 +60,18 @@ module DropAreas =
         ]
         tag props content
 
-    static member MultipleModels (models : DragAndDropModel list) dispatch (tag : Tag) (props : Props) content =
-      let anyMoving = models |> List.choose (fun m -> m.Moving) |> List.tryHead
-      match anyMoving with
-      | Some { CategoryKey = key } ->
-        let props = [
-          yield! props
-          Listeners.defaultReleaseListener key dispatch
-          Listeners.defaultMouseMoveListener key dispatch
-        ]
-        tag props content
-      | None ->
-        tag props content
+    // static member MultipleModels (models : DragAndDropModel list) dispatch (tag : Tag) (props : Props) content =
+    //   let anyMoving = models |> List.choose (fun m -> m.Moving) |> List.tryHead
+    //   match anyMoving with
+    //   | Some { CategoryKey = key } ->
+    //     let props = [
+    //       yield! props
+    //       Listeners.defaultReleaseListener key dispatch
+    //       Listeners.defaultMouseMoveListener key dispatch
+    //     ]
+    //     tag props content
+    //   | None ->
+    //     tag props content
 
   // ************************************************************************************
   // UPDATE
@@ -189,32 +189,31 @@ module DropAreas =
           JS.console.error("Unreachable state: cannot find list at index", insertListIndex)
           indexMap
 
-  let dragAndDropUpdate msg categoryKey (model : DragAndDropModel) =
+  let dragAndDropUpdate msg (model : DragAndDropModel) =
     match msg with
     | DragStart (loc, startCoords, offset) ->
+      let categoryKey = locKey loc
       let movingStatus = MovingStatus.Init categoryKey (loc) |> Some
       { model with Moving = movingStatus; Cursor = startCoords; Offset = Some offset }, Cmd.none
     | DragAndDropMsg.OnDrag coords ->
       {model with Cursor = coords }, Cmd.none
     | DragOver (category, listIndex, index, elementId) ->
-      if category = categoryKey then
-        match model.Moving with
-        | Some { StartLocation = (_, startList, startIndex, startingElementId) }->
-          let slide = None //tryGetSlide elementId
-          let mdl =
-            DragAndDropModel.getItemsForCategoryOrEmpty categoryKey model
-            |> ItemMoving.moveItem (startList, startIndex) (listIndex, index)
-            |> denseRankElementIndexes
-            |> DragAndDropModel.replaceItemsForCategory categoryKey model
-          // let mdl = { model with Items = items' } // |> Model.setSlideOpt slide
-          let newStartLoc = (categoryKey, listIndex, index, startingElementId)
-          (setDragSource categoryKey newStartLoc mdl), Cmd.none
-        | None ->
-          model, Cmd.none
-      else
+      //if category = categoryKey then
+      match model.Moving with
+      | Some { StartLocation = (categoryKey, startList, startIndex, startingElementId) }->
+        let slide = None //tryGetSlide elementId
+        let mdl =
+          DragAndDropModel.getItemsForCategoryOrEmpty categoryKey model
+          |> ItemMoving.moveItem (startList, startIndex) (listIndex, index)
+          |> denseRankElementIndexes
+          |> DragAndDropModel.replaceItemsForCategory categoryKey model
+        // let mdl = { model with Items = items' } // |> Model.setSlideOpt slide
+        let newStartLoc = (categoryKey, listIndex, index, startingElementId)
+        (setDragSource categoryKey newStartLoc mdl), Cmd.none
+      | None ->
         model, Cmd.none
-
-    | DragOver (category, _, _, _) when category <> categoryKey -> model, Cmd.none
+      // else
+      //   model, Cmd.none
 
     | DragOverNonDraggable (key, listIndex, dropAreaId) ->
       printfn "Drag Over Non Draggable raised for %A" (listIndex, dropAreaId)
@@ -234,6 +233,52 @@ module DropAreas =
           //printfn "Error throttling: %A" e
           Fable.Core.JS.console.error("Error throttling: ", e)
           model, Cmd.none
+
+  // let dragAndDropUpdate msg categoryKey (model : DragAndDropModel) =
+  //   match msg with
+  //   | DragStart (loc, startCoords, offset) ->
+  //     let movingStatus = MovingStatus.Init categoryKey (loc) |> Some
+  //     { model with Moving = movingStatus; Cursor = startCoords; Offset = Some offset }, Cmd.none
+  //   | DragAndDropMsg.OnDrag coords ->
+  //     {model with Cursor = coords }, Cmd.none
+  //   | DragOver (category, listIndex, index, elementId) ->
+  //     if category = categoryKey then
+  //       match model.Moving with
+  //       | Some { StartLocation = (_, startList, startIndex, startingElementId) }->
+  //         let slide = None //tryGetSlide elementId
+  //         let mdl =
+  //           DragAndDropModel.getItemsForCategoryOrEmpty categoryKey model
+  //           |> ItemMoving.moveItem (startList, startIndex) (listIndex, index)
+  //           |> denseRankElementIndexes
+  //           |> DragAndDropModel.replaceItemsForCategory categoryKey model
+  //         // let mdl = { model with Items = items' } // |> Model.setSlideOpt slide
+  //         let newStartLoc = (categoryKey, listIndex, index, startingElementId)
+  //         (setDragSource categoryKey newStartLoc mdl), Cmd.none
+  //       | None ->
+  //         model, Cmd.none
+  //     else
+  //       model, Cmd.none
+
+  //   | DragOver (category, _, _, _) when category <> categoryKey -> model, Cmd.none
+
+  //   | DragOverNonDraggable (key, listIndex, dropAreaId) ->
+  //     printfn "Drag Over Non Draggable raised for %A" (listIndex, dropAreaId)
+  //     model, Cmd.none
+
+  //   | DragEnd ->
+  //     { model with Moving = None; Offset = None }, Cmd.none
+  //   | ThrottleMsg throttleMsg ->
+  //     // let the throttler handle the message
+  //     let throttleResult = handleThrottleMsg throttleMsg model.ThrottleState
+  //     match throttleResult with
+  //     // get back a new state and a command 
+  //     | Ok (throttleState, throttleCmd) ->
+  //         // map the command so it's run
+  //         { model with ThrottleState = throttleState }, Cmd.map ThrottleMsg throttleCmd
+  //     | Error e ->
+  //         //printfn "Error throttling: %A" e
+  //         Fable.Core.JS.console.error("Error throttling: ", e)
+  //         model, Cmd.none
 
   // let dragAndDropMultipleModelsUpdate msg (models : DragAndDropModel list) =
   //   match msg with

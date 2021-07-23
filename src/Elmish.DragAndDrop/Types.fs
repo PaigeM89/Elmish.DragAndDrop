@@ -126,7 +126,7 @@ module Types =
   | ActiveDrag of category : DragAndDropCategoryKey * draggedElementId : ElementId
 
   module DragAndDropModel =
-    type internal InitialIds = string list list
+    type InitialIds = string list list
 
     let getItemsForCategoryOrEmpty key model =
       // model.Items |> Map.tryFind key |> Option.defaultValue [[]]

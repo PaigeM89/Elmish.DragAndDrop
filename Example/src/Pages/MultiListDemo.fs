@@ -135,12 +135,12 @@ module MultiListDemo =
         Display DisplayOptions.Flex
       ]
     ]
-    DragDropContext.Context model.DragAndDrop dragAndDropCategoryKey dispatch div contextProps dropAreaContent
+    DragDropContext.Context model.DragAndDrop dispatch div contextProps dropAreaContent
 
   let update msg model =
     match msg with
     | Init ->
       model, Cmd.none
     | DndMsg msg ->
-      let dndModel, cmd = dragAndDropUpdate msg dragAndDropCategoryKey model.DragAndDrop
+      let dndModel, cmd = dragAndDropUpdate msg model.DragAndDrop
       { model with DragAndDrop = dndModel }, Cmd.map DndMsg cmd

@@ -228,7 +228,7 @@ module TableDemo =
         table
       ]
 
-      DragDropContext.Context model.DragAndDrop dragAndDropCategoryKey (DndMsg >> dispatch) div props content
+      DragDropContext.Context model.DragAndDrop (DndMsg >> dispatch) div props content
   
   let addContent model cv =
     let dict = model.ContentMap |> Map.add (string cv.ContentId) cv
@@ -247,7 +247,7 @@ module TableDemo =
     | InitWithSampleData ->
       (initWithSampleData()), Cmd.none
     | DndMsg msg ->
-      let dndModel, cmd = dragAndDropUpdate msg dragAndDropCategoryKey model.DragAndDrop
+      let dndModel, cmd = dragAndDropUpdate msg model.DragAndDrop
       { model with DragAndDrop = dndModel }, Cmd.map DndMsg cmd
     | AddRow ->
       let row = ContentValue.Empty()
