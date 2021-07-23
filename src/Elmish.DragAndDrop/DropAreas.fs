@@ -20,26 +20,27 @@ module DropAreas =
       match model.Moving with
       | None ->
         tag props content
-      | Some { StartLocation = (key, _, _, draggedElementId ) } when key = categoryKey ->
-        let hoverFunc : MouseEventWithThrottle =
-          fun ev throttleId ->
-            mouseFuncs.GetOnHoverEnter() ev draggedElementId throttleId
-        let listeners  : IHTMLProp list = [
-          Listeners.nonDraggableHoverListenerWithFunc model categoryKey id dispatch hoverFunc config.MoveThrottleTimeMs
-          Listeners.releaseListenerWithFunc categoryKey (mouseFuncs.GetOnDrop()) draggedElementId dispatch
-        ]
-        let props = props @ listeners
-        let content =
-          match config.Placeholder with
-          | Some { Styles = phStyles; Props = phProps; Content = phContent } -> 
-            let phId = id + "-placeholder"
-            let phProps = phProps @ [ Id phId ]
-            let handle = Draggable.SelfHandle model categoryKey config dispatch phId div phStyles phProps phContent
-            content @ handle
-          | None -> content 
-
-        tag props content
-      | Some { StartLocation = (key, _, _, _) } when key <> categoryKey -> tag props content
+      | Some { StartLocation = (key, _, _, draggedElementId ) } ->
+        if key = categoryKey then
+          let hoverFunc : MouseEventWithThrottle =
+            fun ev throttleId ->
+              mouseFuncs.GetOnHoverEnter() ev draggedElementId throttleId
+          let listeners  : IHTMLProp list = [
+            Listeners.nonDraggableHoverListenerWithFunc model categoryKey id dispatch hoverFunc config.MoveThrottleTimeMs
+            Listeners.releaseListenerWithFunc categoryKey (mouseFuncs.GetOnDrop()) draggedElementId dispatch
+          ]
+          let props = props @ listeners
+          let content =
+            match config.Placeholder with
+            | Some { Styles = phStyles; Props = phProps; Content = phContent } -> 
+              let phId = id + "-placeholder"
+              let phProps = phProps @ [ Id phId ]
+              let handle = Draggable.SelfHandle model categoryKey config dispatch phId div phStyles phProps phContent
+              content @ handle
+            | None -> content 
+          tag props content
+        else
+          tag props content
 
 
   // ************************************************************************************
@@ -195,19 +196,22 @@ module DropAreas =
       { model with Moving = movingStatus; Cursor = startCoords; Offset = Some offset }, Cmd.none
     | DragAndDropMsg.OnDrag coords ->
       {model with Cursor = coords }, Cmd.none
-    | DragOver (category, listIndex, index, elementId) when category = categoryKey ->
-      match model.Moving with
-      | Some { StartLocation = (_, startList, startIndex, startingElementId) }->
-        let slide = None //tryGetSlide elementId
-        let mdl =
-          DragAndDropModel.getItemsForCategoryOrEmpty categoryKey model
-          |> ItemMoving.moveItem (startList, startIndex) (listIndex, index)
-          //|> getUpdatedItemLocations
-          |> DragAndDropModel.replaceItemsForCategory categoryKey model
-        // let mdl = { model with Items = items' } // |> Model.setSlideOpt slide
-        let newStartLoc = (categoryKey, listIndex, index, startingElementId)
-        (setDragSource categoryKey newStartLoc mdl), Cmd.none
-      | None ->
+    | DragOver (category, listIndex, index, elementId) ->
+      if category = categoryKey then
+        match model.Moving with
+        | Some { StartLocation = (_, startList, startIndex, startingElementId) }->
+          let slide = None //tryGetSlide elementId
+          let mdl =
+            DragAndDropModel.getItemsForCategoryOrEmpty categoryKey model
+            |> ItemMoving.moveItem (startList, startIndex) (listIndex, index)
+            |> denseRankElementIndexes
+            |> DragAndDropModel.replaceItemsForCategory categoryKey model
+          // let mdl = { model with Items = items' } // |> Model.setSlideOpt slide
+          let newStartLoc = (categoryKey, listIndex, index, startingElementId)
+          (setDragSource categoryKey newStartLoc mdl), Cmd.none
+        | None ->
+          model, Cmd.none
+      else
         model, Cmd.none
 
     | DragOver (category, _, _, _) when category <> categoryKey -> model, Cmd.none

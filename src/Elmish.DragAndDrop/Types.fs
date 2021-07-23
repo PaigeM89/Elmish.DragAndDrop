@@ -105,15 +105,14 @@ module Types =
     )
     |> Map.ofList
 
-  /// Returns a list of updated Item Locations from the given list
-  let internal getUpdatedItemLocations (items : ItemLocation list list) =
-    items
-    |> List.mapi (fun i itemList ->
-      itemList
-      |> List.mapi (fun j (_, _, _, id) ->
-        (i, j, id)
-      )
+  let internal denseRankElementIndexes (lit : ListIndexTree) =
+    lit
+    |> Map.toList
+    |> List.map(fun (k, listIndexes) ->
+      let listIndexes = listIndexes |> List.mapi (fun i (_, id) -> i, id)
+      k, listIndexes 
     )
+    |> Map.ofList
 
   let internal replaceItemsLocationsAtKey model key items =
     let i = model.ItemTree |> Map.add key items
