@@ -36,11 +36,11 @@ module MultipleModelsDemo =
   type Model = {
     DragAndDrop : DragAndDropModel
     //BlackMetalBandSorting : DragAndDropModel
-    BlackMetalBands : Map<Guid, Band>
+    BlackMetalBands : Map<string, Band>
     //DeathMetalBandSorting : DragAndDropModel
-    DeathMetalBands : Map<Guid, Band>
+    DeathMetalBands : Map<string, Band>
     //TopTenBandSorting : DragAndDropModel
-    TopTenBands : Map<Guid, Band>
+    TopTenBands : Map<string, Band>
   } with
     static member Init() = 
       let blackMetalBands = [
@@ -76,14 +76,13 @@ module MultipleModelsDemo =
         DeathMetalBandSorting, [ deathMetalBands |> List.map (fun b -> string b.Id) ]
         TopTenBandSorting, [ topten |> List.map (fun b -> string b.Id) ]
       ]
-      printfn "dragn and drop tree after init is %A" dnd.ItemTree
       {
         //BlackMetalBandSorting = DragAndDropModel.createWithItems (blackMetalBands |> List.map (fun b -> b.Id |> string ))
-        BlackMetalBands = blackMetalBands |> List.map (fun x -> x.Id, x) |> Map.ofList
+        BlackMetalBands = blackMetalBands |> List.map (fun x -> string x.Id, x) |> Map.ofList
         //DeathMetalBandSorting = DragAndDropModel.createWithItems (deathMetalBands |> List.map (fun b -> b.Id |> string))
-        DeathMetalBands = deathMetalBands |> List.map (fun x -> x.Id, x) |> Map.ofList
+        DeathMetalBands = deathMetalBands |> List.map (fun x -> (string x.Id), x) |> Map.ofList
         //TopTenBandSorting = DragAndDropModel.createWithItems (topten |> List.map (fun b -> b.Id |> string))
-        TopTenBands = topten |> List.map(fun b -> b.Id, b) |> Map.ofList
+        TopTenBands = topten |> List.map(fun b -> string b.Id, b) |> Map.ofList
         DragAndDrop = dnd
       }
 
@@ -105,7 +104,7 @@ module MultipleModelsDemo =
         Opacity 0.2
         PointerEvents "None"
       ]
-      MoveThrottleTimeMs = Some (System.TimeSpan.FromMilliseconds 500.)
+      MoveThrottleTimeMs = Some (System.TimeSpan.FromMilliseconds 100.)
   }
 
   let mappedMsg m = DndMsg m
@@ -131,7 +130,6 @@ module MultipleModelsDemo =
         [
           h3 [] [ str band.Name ]
           p [] [ str "Black metal" ]
-          p [] [ str (string band.Id) ]
         ]
     | Death ->
       Draggable.SelfHandle
@@ -152,7 +150,6 @@ module MultipleModelsDemo =
         [
           h3 [] [ str band.Name ]
           p [] [ str "Death metal" ]
-          p [] [ str (string band.Id) ]
         ]
 
   let renderTopBandDraggable model dispatch (band : Band) =
@@ -178,11 +175,17 @@ module MultipleModelsDemo =
       [
         h3 [] [ str band.Name ]
         p [] [ str genre ]
-        p [] [ str (string band.Id) ]
       ]
 
   let blackMetalDropArea model dispatch =
-    let bands = model.BlackMetalBands |> Map.toList |> List.map snd
+    let bands =
+      model.DragAndDrop.ElementIdsForCategory BlackMetalBandSorting
+      |> List.collect snd
+      |> List.map (fun (index, id) ->
+        let element = model.BlackMetalBands |> Map.tryFind id
+        element
+      )
+      |> List.choose id
     let draggables = bands |> List.collect (renderDraggable model dispatch)
     div [
       Id "black-metal-drop-area"
@@ -196,7 +199,14 @@ module MultipleModelsDemo =
     ]
   
   let deathMetalDropArea model dispatch =
-    let bands = model.DeathMetalBands |> Map.toList |> List.map snd
+    let bands =
+      model.DragAndDrop.ElementIdsForCategory DeathMetalBandSorting
+      |> List.collect snd
+      |> List.map (fun (index, id) ->
+        let element = model.DeathMetalBands |> Map.tryFind id
+        element
+      )
+      |> List.choose id
     let draggables = bands |> List.collect (renderDraggable model dispatch)
     div [
       Id "death-metal-drop-area"
@@ -210,7 +220,14 @@ module MultipleModelsDemo =
     ]
 
   let topTenDropArea model dispatch =
-    let bands = model.TopTenBands |> Map.toList |> List.map snd
+    let bands =
+      model.DragAndDrop.ElementIdsForCategory TopTenBandSorting
+      |> List.collect snd
+      |> List.map (fun (index, id) ->
+        let element = model.TopTenBands |> Map.tryFind id
+        element
+      )
+      |> List.choose id
     let draggables = bands |> List.collect (renderTopBandDraggable model dispatch)
     div [
       Id "top-metal-drop-area"
@@ -251,6 +268,9 @@ module MultipleModelsDemo =
     | Init ->
       (Model.Init()), Cmd.none
     | DndMsg msg ->
+      match msg with
+      | OnDrag _ -> ()
+      | _ -> printfn "Handling dnd msg %A" msg
       // let bmMdl, bmCmd = dragAndDropUpdate msg bmCategory model.DragAndDrop
       // let dmMdl, dmCmd = dragAndDropUpdate msg dmCategory model.DragAndDrop
       // let topMdl, topCmd = dragAndDropUpdate msg topTenCategory model.DragAndDrop

@@ -60,19 +60,6 @@ module DropAreas =
         ]
         tag props content
 
-    // static member MultipleModels (models : DragAndDropModel list) dispatch (tag : Tag) (props : Props) content =
-    //   let anyMoving = models |> List.choose (fun m -> m.Moving) |> List.tryHead
-    //   match anyMoving with
-    //   | Some { CategoryKey = key } ->
-    //     let props = [
-    //       yield! props
-    //       Listeners.defaultReleaseListener key dispatch
-    //       Listeners.defaultMouseMoveListener key dispatch
-    //     ]
-    //     tag props content
-    //   | None ->
-    //     tag props content
-
   // ************************************************************************************
   // UPDATE
   // ************************************************************************************
@@ -163,6 +150,7 @@ module DropAreas =
     //       li
   
     let moveItem (startListIndex, startIndex) (insertListIndex, insertAtIndex) (indexMap : ListIndexTree) =
+      printfn "moving item with start list, index %i, %i to %i, %i" startListIndex startIndex insertListIndex insertAtIndex
       if startListIndex = insertListIndex then
         moveItemSameList startListIndex startIndex insertAtIndex indexMap
       else
@@ -198,22 +186,20 @@ module DropAreas =
     | DragAndDropMsg.OnDrag coords ->
       {model with Cursor = coords }, Cmd.none
     | DragOver (category, listIndex, index, elementId) ->
-      //if category = categoryKey then
       match model.Moving with
       | Some { StartLocation = (categoryKey, startList, startIndex, startingElementId) }->
+        printfn "drag over for category %s, li %i, index %i" category listIndex index
+        printfn "dragged element category %s, li %i, index %i" categoryKey startList startIndex
         let slide = None //tryGetSlide elementId
         let mdl =
           DragAndDropModel.getItemsForCategoryOrEmpty categoryKey model
           |> ItemMoving.moveItem (startList, startIndex) (listIndex, index)
           |> denseRankElementIndexes
           |> DragAndDropModel.replaceItemsForCategory categoryKey model
-        // let mdl = { model with Items = items' } // |> Model.setSlideOpt slide
         let newStartLoc = (categoryKey, listIndex, index, startingElementId)
         (setDragSource categoryKey newStartLoc mdl), Cmd.none
       | None ->
         model, Cmd.none
-      // else
-      //   model, Cmd.none
 
     | DragOverNonDraggable (key, listIndex, dropAreaId) ->
       printfn "Drag Over Non Draggable raised for %A" (listIndex, dropAreaId)
@@ -262,45 +248,6 @@ module DropAreas =
   //   | DragOver (category, _, _, _) when category <> categoryKey -> model, Cmd.none
 
   //   | DragOverNonDraggable (key, listIndex, dropAreaId) ->
-  //     printfn "Drag Over Non Draggable raised for %A" (listIndex, dropAreaId)
-  //     model, Cmd.none
-
-  //   | DragEnd ->
-  //     { model with Moving = None; Offset = None }, Cmd.none
-  //   | ThrottleMsg throttleMsg ->
-  //     // let the throttler handle the message
-  //     let throttleResult = handleThrottleMsg throttleMsg model.ThrottleState
-  //     match throttleResult with
-  //     // get back a new state and a command 
-  //     | Ok (throttleState, throttleCmd) ->
-  //         // map the command so it's run
-  //         { model with ThrottleState = throttleState }, Cmd.map ThrottleMsg throttleCmd
-  //     | Error e ->
-  //         //printfn "Error throttling: %A" e
-  //         Fable.Core.JS.console.error("Error throttling: ", e)
-  //         model, Cmd.none
-
-  // let dragAndDropMultipleModelsUpdate msg (models : DragAndDropModel list) =
-  //   match msg with
-  //   | DragStart (loc, startCoords, offset) ->
-  //     let movingStatus = MovingStatus.Init (loc) |> Some
-  //     { model with Moving = movingStatus; Cursor = startCoords; Offset = Some offset }, Cmd.none
-  //   | DragAndDropMsg.OnDrag coords ->
-  //     {model with Cursor = coords }, Cmd.none
-  //   | DragOver (listIndex, index, elementId) ->
-  //     match model.Moving with
-  //     | Some { StartLocation = (startList, startIndex, startingElementId) }->
-  //       let slide = None //tryGetSlide elementId
-  //       let items' =
-  //         ItemMoving.moveItem (startList, startIndex) (listIndex, index) model.Items
-  //         |> getUpdatedItemLocations
-  //       let mdl = { model with Items = items' } // |> Model.setSlideOpt slide
-  //       let newStartLoc = (listIndex, index, startingElementId)
-  //       (setDragSource newStartLoc mdl), Cmd.none
-  //     | None ->
-  //       model, Cmd.none
-
-  //   | DragOverNonDraggable (listIndex, dropAreaId) ->
   //     printfn "Drag Over Non Draggable raised for %A" (listIndex, dropAreaId)
   //     model, Cmd.none
 

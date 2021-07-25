@@ -65,17 +65,20 @@ module Draggables =
         let props : IHTMLProp list = ((Style styles) :> IHTMLProp) :: props 
         let handle = DragHandle.Handle model categoryKey id dispatch tag props content
         [ handle ]
-      | Some { StartLocation = (_, _, _, draggedElementId )} ->
-        if id = draggedElementId then
+      | Some { StartLocation = (category, _, _, draggedElementId )} ->
+        if category = categoryKey && id = draggedElementId then
           let preview = buildHoverPreview config id tag styles props content
           let dragged = buildDragged config model id tag styles props content
           [ preview; dragged ]
-        else
+        elif category = categoryKey then
           let listener = Listeners.defaultHoverListener model categoryKey id dispatch config.MoveThrottleTimeMs :> IHTMLProp
           let styles = (config.ListenerElementStyles |> orEmpty) @ styles |> Style :> IHTMLProp
           // added in this order specifically; listener overrides props overrides config
           let props = (config.ListenerElementProperties |> orEmpty) @ props @ [ listener ]
           [tag (styles :: props) content]
+        else
+          let props = Style styles :> IHTMLProp :: props
+          [tag props content]
 
     static member InnerHandle model (categoryKey : DragAndDropCategoryKey) config dispatch id (tag : Tag) styles props content =
       match model.Moving with
@@ -83,17 +86,20 @@ module Draggables =
         //no drags in progress, render the content
         let props : IHTMLProp list = [ yield! props; Style styles ]
         [tag props content]
-      | Some { StartLocation = (_, _, _, draggedElementId )} ->
-        if id = draggedElementId then
+      | Some { StartLocation = (category, _, _, draggedElementId )} ->
+        if categoryKey = category && id = draggedElementId then
           let preview = buildHoverPreview config id tag styles props content
           let dragged = buildDragged config model id tag styles props content
           [ preview; dragged ]
-        else
+        elif categoryKey = category then
           let listener = Listeners.defaultHoverListener model categoryKey id dispatch config.MoveThrottleTimeMs :> IHTMLProp
           let styles = (config.ListenerElementStyles |> orEmpty) @ styles |> Style :> IHTMLProp
           // added in this order specifically; listener overrides props overrides config
           let props = (config.ListenerElementProperties |> orEmpty) @ props @ [ listener ]
           [tag (styles :: props) content]
+        else
+          let props = Style styles :> IHTMLProp :: props
+          [tag props content]
 
     // static member DraggableFor model config dispatch dragHandleId draggableElementId (tag : Tag) styles props content =
     //   match model.Moving with

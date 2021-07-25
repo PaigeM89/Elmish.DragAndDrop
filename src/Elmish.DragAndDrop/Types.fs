@@ -158,7 +158,6 @@ module Types =
           category, mappedIds
         )
         |> Map.ofList
-      // let categoryMap = values |> List.map (fun (k, vs) -> k, (initItemLocationsForTree vs)) |> Map.ofList
       { DragAndDropModel.Empty() with ItemTree = itemMap }
 
     /// Creates a new Model initialied with items in multiple lists
