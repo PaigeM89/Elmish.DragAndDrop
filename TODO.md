@@ -9,11 +9,6 @@ This file tracks things that need to be done (obviously). I used to track this i
 * Sliding animations
   * The moving elements that adjust to make space for the draggable should slide out of the way
   * Don't forget to make a demo when it's done!
-* Only allow some kinds of draggables to enter some kinds of categories.
-  * EG: one category of "my favorite things", with any item; 3 categories of "my favorite food", "my favorite band", "my favorite movie", each limited by type.
-    * My initial thought is to use callbacks, so that we inject as little outside logic or requirements as possible.
-    * Look into making empty categories render as empty drop buckets, and on hover the items get added?
-      * Only downside is this doesn't fix the issue of the "root level container" not being a drop area
 * Allow drop areas to also be draggables
   * I think I need to really do a big think about the models & how they interact
 
