@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0-rc2] - 2021-07-25
+
+### Added
+- You can now separate Drag And Drop categories to create different drag & drop sections that do not interact with each other.
+
+### Changed
+- The entire API for drag handles, draggables, drop areas, and contexts has been changed.
+
 ## [0.4.0-rc1] - 2021-07-25
 
 ### Added
@@ -119,7 +127,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Drag and Drop with Rotate.
 - Horizontal, Vertical, and Free ghost item movement.
 
-[Unreleased]: https://github.com/PaigeM89/Elmish.DragAndDrop/compare/v0.4.0-rc1...HEAD
+[Unreleased]: https://github.com/PaigeM89/Elmish.DragAndDrop/compare/v0.4.0-rc2...HEAD
+[0.4.0-rc2]: https://github.com/PaigeM89/Elmish.DragAndDrop/compare/v0.3.0...v0.4.0-rc2
 [0.4.0-rc1]: https://github.com/PaigeM89/Elmish.DragAndDrop/compare/v0.3.0...v0.4.0-rc1
 [0.3.0]: https://github.com/PaigeM89/Elmish.DragAndDrop/compare/v0.2.0...v0.3.0
 [0.3.0-alpha02]: https://github.com/PaigeM89/Elmish.DragAndDrop/compare/v0.2.0...v0.3.0-alpha02
