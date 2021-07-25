@@ -27,6 +27,13 @@ module Types =
 
   type ItemTree = Map<DragAndDropCategoryKey, Map<ListIndex, (Index * ElementId) list>>
 
+  let private initItemLocationsForTree lists =
+    lists
+    |> List.mapi (fun i li ->
+      i, (li |> List.mapi (fun j x -> j, x))
+    )
+    |> Map.ofList
+
   type DragAndDropModel = {
     Cursor : Coords
     Moving: MovingStatus option
@@ -67,6 +74,15 @@ module Types =
         ThrottleState = Map.empty
       }
 
+      /// Removes all drag and drop info for the given key. Useful if a drag-and-drop is no longer on the screen.
+      member this.RemoveKey key = { this with ItemTree = this.ItemTree |> Map.remove key }
+      
+      /// Adds or replaces all the elementIds for the given CategoryKey.
+      member this.AddOrReplaceKey key elementIds =
+        let listIndex = initItemLocationsForTree elementIds
+        { this with ItemTree = this.ItemTree |> Map.add key listIndex }
+
+
   let private initItemLocations lists =
     lists
     |> List.mapi(fun i li ->
@@ -75,13 +91,6 @@ module Types =
         (i, j, x)
       )
     )
-
-  let private initItemLocationsForTree lists =
-    lists
-    |> List.mapi (fun i li ->
-      i, (li |> List.mapi (fun j x -> j, x))
-    )
-    |> Map.ofList
 
   let internal denseRankElementIndexes (lit : ListIndexTree) =
     lit

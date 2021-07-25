@@ -36,6 +36,8 @@ group Build
     nuget Fantomas
     nuget Argu
 
+    nuget MSBuild.StructuredLogger 2.1.507
+
 group Docs
     storage: none
     source https://www.nuget.org/api/v2
