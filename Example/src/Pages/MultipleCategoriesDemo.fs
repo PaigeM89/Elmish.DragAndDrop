@@ -1,7 +1,8 @@
 namespace Pages
 
 (*
-  Depending on your application, you could end up with more than 1 drag & drop model instance. This demo shows how to set that up.
+  If you have more than 1 distinct Drag & Drop categories of things that should not interact with each other, then you'll want to configure
+  different Categories as shown in this demo.
 *)
 
 module MultipleCategoriesDemo =
