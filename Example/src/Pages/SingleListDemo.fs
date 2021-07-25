@@ -62,22 +62,33 @@ module SingleListDemo =
         PointerEvents "None"
       ]
   }
-
-  let createDragHandle model elementId dispatch =
-    let element =
-      Map.tryFind elementId model.ContentMap
-      |> Option.defaultValue (div [] [])
-    let handleId = elementId + "-handle"
-    ElementGenerator.Create handleId [ Cursor "grab" ] [] [element]
-    |> DragHandle.dragHandle model.DragAndDrop elementId dispatch
-
-  let createDraggable model elementId dispatch =
-    let handle = createDragHandle model elementId dispatch
-    ElementGenerator.Create elementId [] [ ClassName "content" ] [ handle ]
-    |> Draggable.draggable model.DragAndDrop dragAndDropConfig dispatch
+  let dragAndDropCategoryKey = "default-category"
 
   let view model (dispatch : Msg -> unit) =
     let dispatch = (mappedMsg >> dispatch)
+
+    let dropAreaContent =
+      // get all the element Ids in a single list.
+      // we don't have multiple categories to concern ourselves with.
+      model.DragAndDrop.ElementIdsForCategorySingleList dragAndDropCategoryKey
+      // we collect here because sometimes the Draggable returns multiple items
+      |> List.collect(fun id ->
+        // look up the content in our model's content map
+        let content = Map.tryFind id model.ContentMap |> Option.defaultValue (div [] [ str "Unable to find content" ])
+        
+        // create the draggable
+        Draggable.SelfHandle
+          model.DragAndDrop
+          dragAndDropCategoryKey
+          dragAndDropConfig
+          dispatch
+          id
+          div
+          [ Cursor "grab" ]
+          [ ClassName "content"; Id id ]
+          [ content ]
+      )
+
     let dropAreaProps = [ 
       Style [
         Background "#33adff"
@@ -87,28 +98,28 @@ module SingleListDemo =
         MarginRight "auto"
       ] :> IHTMLProp
     ]
-    let dropAreaContent =
-      // note that element Ids are always a list of lists, to accomodate multiple categories.
-      // see the Multi List Demo for an example of that.
-      model.DragAndDrop.ElementIds()
-      |> List.map(fun li ->
-        li
-        |> List.map (fun id ->
-          createDraggable model id dispatch
-        )
-        |> DropArea.fromDraggables div dropAreaProps
-      )
+
+    let dropArea =
+      DropArea.DropArea 
+        model.DragAndDrop
+        dragAndDropCategoryKey
+        dragAndDropConfig
+        (MouseEventHandlers.Empty())
+        dispatch
+        "drop-area"
+        div
+        dropAreaProps
+        dropAreaContent
+    
     let props : IHTMLProp list = [ 
       ClassName "wrapper"
       Style [
-        Display DisplayOptions.Flex
         MarginLeft "auto"
         MarginRight "auto"
         Width "100%"
       ]
     ]
-    let content = dropAreaContent
-    DragDropContext.context model.DragAndDrop dispatch div props content
+    DragDropContext.Context model.DragAndDrop dispatch div props [dropArea]
 
   let update msg model =
     match msg with

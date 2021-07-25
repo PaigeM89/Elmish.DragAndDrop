@@ -2,11 +2,22 @@ namespace Pages
 
 open System
 
+(*
+  This demo shows how to create a drag-and-drop setup with table rows.
+
+  TODO: Fix this demo. The preview sort of works but the rest of the demo does not.
+*)
+
 module TableDemo =
   open Fable.React
   open Fable.React.Props
   open Elmish
   open Elmish.DragAndDrop
+
+  let parseIntOrZero str =
+    match Int32.TryParse str with
+    | true, i -> i
+    | false, _ -> 0
 
   type ContentValue = {
     ContentId : Guid
@@ -33,10 +44,10 @@ module TableDemo =
 
   let initWithSampleData() =
     let data = [
-      { ContentValue.Empty() with SomeInt = 1; SomeString = "hello world"; IsChecked = true}
-      { ContentValue.Empty() with SomeInt = 3; SomeString = "foo"; IsChecked = true}
-      { ContentValue.Empty() with SomeInt = 5; SomeString = "bar"; IsChecked = false}
-      { ContentValue.Empty() with SomeInt = 7; SomeString = "bax"; IsChecked = false}
+      { ContentValue.Empty() with SomeInt = 1; SomeString = "This demo is currently broken"; IsChecked = true }
+      { ContentValue.Empty() with SomeInt = 3; SomeString = "The rows don't actually move when you drag them."; IsChecked = true }
+      { ContentValue.Empty() with SomeInt = 5; SomeString = "No idea what's wrong."; IsChecked = false }
+      { ContentValue.Empty() with SomeInt = 7; SomeString = "Contributions welcome! :)"; IsChecked = false }
     ]
     let dnd = DragAndDropModel.createWithItems (data |> List.map (fun x -> x.ContentId |> string))
     let m = data |> List.map(fun x -> (string x.ContentId), x) |> Map.ofList
@@ -50,6 +61,8 @@ module TableDemo =
   | InitWithSampleData
   | DndMsg of DragAndDropMsg
   | Checkbox of contentId : Guid * status : bool
+  | NumericInputChange of value : int * rowId : Guid
+  | TextInputChange of value: string * rowId : Guid
   | AddRow
   | DeleteRow of rowId : Guid
 
@@ -69,34 +82,39 @@ module TableDemo =
         Opacity 0.2
       ]
   }
+  let dragAndDropCategoryKey = "default-category"
 
   module View =
 
-    let numericInput value =
-      input [
-        Value value
-        OnChange (fun ev -> ())
-      ]
-
     let createTableRow model dispatch index (cv : ContentValue)=
       let rowId = cv.ContentId |> string
-      let rootElementId = rowId
       let handleStyles = if model.DragAndDrop.Moving.IsSome then [] else [ Cursor "grab" ]
 
-      let content = [
+      // note that the content is the whole collection of table cells, without any wrapping tag.
+      [
           td [] [
-            ElementGenerator.Create (rowId + "-handle") handleStyles [] [
-              h2 [] [ str (string index)]
-            ]
-            |> DragHandle.dragHandle model.DragAndDrop rowId (dndMsg >> dispatch)
-          ]
-          td [] [
-            numericInput cv.SomeInt
+            DragHandle.Handle
+              model.DragAndDrop
+              dragAndDropCategoryKey
+              rowId
+              (dndMsg >> dispatch)
+              div
+              [ Id (rowId + "-handle"); Style handleStyles]
+              [
+                h2 [] [ str (string index) ]
+              ]
           ]
           td [] [
             input [
-              Value cv.SomeString
-              OnChange (fun ev -> ())
+              HTMLAttr.Type "numeric"
+              DefaultValue cv.SomeInt
+              OnChange (fun ev -> ev.Value |> parseIntOrZero |> (fun n -> NumericInputChange (n, cv.ContentId) |> dispatch))
+            ]
+          ]
+          td [] [
+            input [
+              DefaultValue cv.SomeString
+              OnChange (fun ev -> TextInputChange (ev.Value, cv.ContentId) |> dispatch)
             ]
           ]
           td [] [
@@ -115,10 +133,15 @@ module TableDemo =
             ]
           ]
       ]
-      let gen = 
-        ElementGenerator.Create rootElementId [] [Id rowId ] content
-        |> ElementGenerator.setTag tr
-      Draggable.draggable model.DragAndDrop dragAndDropConfig (dndMsg >> dispatch) gen
+      |> Draggable.InnerHandle
+          model.DragAndDrop
+          dragAndDropCategoryKey
+          dragAndDropConfig
+          (dndMsg >> dispatch)
+          rowId
+          tr
+          []
+          [ Id rowId ]
 
     let addRowButton dispatch = 
       button [
@@ -161,12 +184,12 @@ module TableDemo =
         ]
 
       let rows =
-        model.DragAndDrop.ElementIds()
-        |> List.tryHead |> Option.defaultValue []
+        model.DragAndDrop.ElementIdsForCategorySingleList dragAndDropCategoryKey
         |> List.mapi (fun index id ->
           let cv = model.ContentMap |> Map.find id
           createTableRow model dispatch index cv
         )
+        |> List.concat
       
       let table = 
         table [
@@ -179,8 +202,16 @@ module TableDemo =
           ]
         ] [
           tableHeaders
-
-          DropArea.fromDraggables tbody [] rows
+          DropArea.DropArea 
+            model.DragAndDrop
+            dragAndDropCategoryKey
+            dragAndDropConfig
+            (MouseEventHandlers.Empty())
+            (dndMsg >> dispatch)
+            "drop-area"
+            tbody
+            []
+            rows
         ]
 
       let props : IHTMLProp list = [
@@ -197,16 +228,16 @@ module TableDemo =
         table
       ]
 
-      DragDropContext.context model.DragAndDrop (DndMsg >> dispatch) div props content
+      DragDropContext.Context model.DragAndDrop (DndMsg >> dispatch) div props content
   
   let addContent model cv =
     let dict = model.ContentMap |> Map.add (string cv.ContentId) cv
-    let dnd = DragAndDropModel.insertNewItemAtHead 0 (string cv.ContentId) model.DragAndDrop
+    let dnd = DragAndDropModel.insertNewItemAtHead dragAndDropCategoryKey 0 (string cv.ContentId) model.DragAndDrop
     { model with ContentMap = dict; DragAndDrop = dnd }
 
   let removeContent model id =
     let m = model.ContentMap |> Map.remove (string id)
-    let dnd = DragAndDropModel.removeItem (string id) model.DragAndDrop
+    let dnd = DragAndDropModel.removeItem dragAndDropCategoryKey (string id) model.DragAndDrop
     { model with ContentMap = m; DragAndDrop = dnd }
 
   let update msg model =
@@ -234,3 +265,16 @@ module TableDemo =
         { model with ContentMap = m }, Cmd.none
       | None ->
         model, Cmd.none
+    | NumericInputChange(value, rowId) ->
+      printfn "Numeric input changed to value %A for row %A" value rowId
+      match Map.tryFind (string rowId) model.ContentMap with
+      | Some content ->
+        let cm = model.ContentMap |> Map.add (string rowId) { content with SomeInt = value }
+        { model with ContentMap = cm }, Cmd.none
+      | None -> model, Cmd.none
+    | TextInputChange(value, rowId) ->
+      match Map.tryFind (string rowId) model.ContentMap with
+      | Some content ->
+        let cm = model.ContentMap |> Map.add (string rowId) { content with SomeString = value }
+        { model with ContentMap = cm }, Cmd.none
+      | None -> model, Cmd.none

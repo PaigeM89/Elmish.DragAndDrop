@@ -55,41 +55,73 @@ module DropToDeleteDemo =
         PointerEvents "None"
       ]
   }
+  let dragAndDropCategoryKey = "default-category"
 
   let createInitButton dispatch =
     let prop = OnClick (fun ev -> ev.preventDefault(); Init |> dispatch)
     let style = Style [
       Display DisplayOptions.Flex
+      MarginLeft "auto"
+      MarginRight "auto"
     ]
     button [ prop; style ] [ p [] [ str "Initialize / Reset" ] ]
 
-  let createDragHandle model elementId rootElementId dispatch =
+  let createDragHandle model rootElementId dispatch =
     let element =
-      Map.tryFind elementId model.ContentMap
+      Map.tryFind rootElementId model.ContentMap
       |> Option.defaultValue (div [] [])
-    let handleId = elementId + "-handle"
-    ElementGenerator.Create handleId [ Cursor "grab" ] [] [element]
-    |> DragHandle.dragHandle model.DragAndDrop elementId dispatch
+    let handleId = rootElementId + "-handle"
+    DragHandle.Handle
+      model.DragAndDrop
+      dragAndDropCategoryKey
+      rootElementId
+      (mappedMsg >> dispatch)
+      div
+      [ Id handleId ]
+      [ element ]
 
-  let createDraggable model elementId dispatch =
-    let rootId = elementId // making these equal makes the whole thing draggable
-    let handle = createDragHandle model elementId rootId dispatch
-    ElementGenerator.Create rootId [] [ ClassName "content" ] [ handle ]
-    |> Draggable.draggable model.DragAndDrop dragAndDropConfig dispatch
+  let createDraggable model rootId dispatch =
+    let handle = createDragHandle model rootId dispatch
+    Draggable.InnerHandle
+      model.DragAndDrop
+      dragAndDropCategoryKey
+      dragAndDropConfig
+      (mappedMsg >> dispatch)
+      rootId
+      div
+      []
+      [ ClassName "content"; Id rootId ]
+      [ handle ]
 
   let createDropBucket model dispatch =
-    let onHover = (fun _ id -> printfn "on hover for delete bucket %A triggered" id; HoverOverDelete id |> dispatch)
+    let onHover = (fun _ id _ -> printfn "on hover for delete bucket %A triggered" id; HoverOverDelete id |> dispatch)
     let onDrop = (fun _ id -> printfn "on drop for delete block %A triggered" id; Deleted id |> dispatch )
+    let mouseEventFuncs =
+      { MouseEventHandlers.Empty() with
+          OnHoverEnter = Some onHover
+          OnDrop = Some onDrop
+      }
     let styles = [
-      //if not isHovered then Background "#434343" else Background "#0044AA"
+      MarginRight "auto"
+      MarginLeft "auto"
       match model.DeleteAction with
       | Some (Hover _) -> Background "#337799"
       | Some (DeleteAction.Deleted _) -> Background "#997733"
       | _ -> Background "#345678"
       Display DisplayOptions.Flex
     ]
-    ElementGenerator.Create "delete-bucket" styles [] [ h2 [] [ str "Drag here to delete!" ] ]
-    |> DropArea.asBucket model.DragAndDrop dragAndDropConfig onHover onDrop (mappedMsg >> dispatch)
+    DropArea.DropArea
+      model.DragAndDrop
+      dragAndDropCategoryKey
+      dragAndDropConfig
+      mouseEventFuncs
+      (mappedMsg >> dispatch)
+      "delete-bucket"
+      div
+      [ Style styles ]
+      [
+        h2 [] [ str "Drag here to delete!" ]
+      ]
 
   let view model (dispatch : Msg -> unit) =
     let dropAreaProps = [ 
@@ -101,21 +133,25 @@ module DropToDeleteDemo =
         MarginRight "auto"
       ] :> IHTMLProp
     ]
-    let dropAreaContent =
+    let dropArea =
       // note that element Ids are always a list of lists, to accomodate multiple categories.
       // see the Multi List Demo for an example of that.
-      model.DragAndDrop.ElementIds()
-      |> List.map(fun li ->
-        li
-        |> List.map (fun id ->
-          createDraggable model id (mappedMsg >> dispatch)
-        )
-        |> DropArea.fromDraggables div dropAreaProps
+      model.DragAndDrop.ElementIdsForCategorySingleList dragAndDropCategoryKey
+      |> List.collect(fun id ->
+          createDraggable model id dispatch
       )
+      |> DropArea.DropArea
+            model.DragAndDrop
+            dragAndDropCategoryKey
+            dragAndDropConfig
+            (MouseEventHandlers.Empty())
+            (mappedMsg >> dispatch)
+            "drop-area"
+            div
+            dropAreaProps
     let props : IHTMLProp list = [ 
       ClassName "wrapper"
       Style [
-        Display DisplayOptions.Flex
         MarginLeft "auto"
         MarginRight "auto"
         Width "100%"
@@ -124,10 +160,16 @@ module DropToDeleteDemo =
     let deleteDropArea = createDropBucket model dispatch
     let content = [
       yield createInitButton (dispatch)
-      yield! dropAreaContent
-      yield deleteDropArea
+      yield div [
+        Style [
+          Display DisplayOptions.Flex
+        ]
+      ] [
+        dropArea
+        deleteDropArea
+      ]
     ]
-    DragDropContext.context model.DragAndDrop (mappedMsg >> dispatch) div props content
+    DragDropContext.Context model.DragAndDrop (mappedMsg >> dispatch) div props content
 
   let update msg model =
     match msg with
@@ -137,14 +179,18 @@ module DropToDeleteDemo =
       let ids = content |> List.map fst
       let dndModel = DragAndDropModel.createWithItems ids
       { model with DragAndDrop = dndModel; DeleteAction = None }, Cmd.none
+    | DndMsg (DragEnd) ->
+      let dndModel, cmd = dragAndDropUpdate (DragEnd) model.DragAndDrop
+      { model with DragAndDrop = dndModel; DeleteAction = None }, Cmd.map DndMsg cmd
     | DndMsg msg ->
       let dndModel, cmd = dragAndDropUpdate msg model.DragAndDrop
-      { model with DragAndDrop = dndModel; DeleteAction = None  }, Cmd.map DndMsg cmd
+      { model with DragAndDrop = dndModel }, Cmd.map DndMsg cmd
     | HoverOverDelete hoverElementId ->
+      printfn "hover over delete msg: %A" hoverElementId
       let a = Hover hoverElementId
       { model with DeleteAction = Some a; }, Cmd.none
     | Deleted deletedId ->
       let a = DeleteAction.Deleted deletedId
       let items = model.ContentMap |> Map.remove deletedId
-      let dnd = model.DragAndDrop |> DragAndDropModel.removeItem deletedId
+      let dnd = model.DragAndDrop |> DragAndDropModel.removeItem dragAndDropCategoryKey deletedId
       { model with DeleteAction = Some a; ContentMap = items; DragAndDrop = dnd}, Cmd.none

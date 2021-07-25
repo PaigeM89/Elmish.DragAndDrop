@@ -26,6 +26,7 @@
 
 h2,
 h3,
+h4, 
 p {
   text-align: center;
 }
@@ -49,6 +50,35 @@ input {
   margin-right: auto;
 }
 
+.content-small {
+  margin: 10px;
+  text-align: center;
+  background-color: #33ccff;
+  /* padding: 3px; */
+  border: 1px solid black;
+  width: 150px;
+  height: 150px;
+  /* min-height: 25px; */
+  display: inline-flex;
+}
+
+.content-verysmall {
+  margin: 5px;
+  text-align: center;
+  background-color: #33ccff;
+  border: 1px solid black;
+  min-width: 50px;
+  width: 150px;
+  min-height: 40px;
+  font-size: x-small;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.bucket {
+  background-color: aquamarine;
+}
+
 .li-content {
   text-align: center;
   background-color: #33ccff;
@@ -61,4 +91,8 @@ input {
 
 .dragged {
   background-color: darkcyan;
+}
+
+.page-small {
+  font-size: small;
 }

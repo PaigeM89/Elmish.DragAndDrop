@@ -11,6 +11,7 @@ type Page =
 | HandlesDemo of model : Pages.HandlesDemo.Model
 | TableDemo of model : Pages.TableDemo.Model
 | DropToDeleteDemo of model : Pages.DropToDeleteDemo.Model
+| MultipleCategoriesDemo of model : Pages.MultipleCategoriesDemo.Model
 // | HorizontalDemo of model : Pages.HorizontalDemo.Model
 
 
@@ -29,11 +30,13 @@ type Msg =
 | HandlesDemoMsg of Pages.HandlesDemo.Msg
 | TableDemoMsg of Pages.TableDemo.Msg
 | DropToDeleteDemoMsg of Pages.DropToDeleteDemo.Msg
+| MultipleCategoriesDemoMsg of Pages.MultipleCategoriesDemo.Msg
 | ToSingleListDemo
 | ToMultiListDemo
 | ToHandlesDemo
 | ToTableDemo
 | ToDropToDeleteDemo
+| ToMultipleCategoriesDemo
 // | ToHorizontalDemo
 
 let view model (dispatch : Msg -> unit) =
@@ -45,6 +48,7 @@ let view model (dispatch : Msg -> unit) =
             yield button [ OnClick (fun _ ->  ToHandlesDemo |> dispatch)] [ str "Handles Demo" ]
             yield button [ OnClick (fun _ -> ToTableDemo |> dispatch)] [ str "Table Demo" ]
             yield button [ OnClick (fun _ -> ToDropToDeleteDemo |> dispatch)] [ str "Drop To Delete Demo" ]
+            yield button [ OnClick (fun _ -> ToMultipleCategoriesDemo |> dispatch )] [ str "Multiple Drag And Drop Models Demo" ]
             // yield button [ OnClick (fun _ ->  ToHorizontalDemo |> dispatch)] [ str "Horizontal Demo"]
         ]
         match model.Page with
@@ -53,6 +57,7 @@ let view model (dispatch : Msg -> unit) =
         | HandlesDemo dnd -> yield Pages.HandlesDemo.view dnd (fun x -> x |> HandlesDemoMsg |> dispatch )
         | TableDemo dnd -> yield Pages.TableDemo.View.view dnd (fun x -> x |> TableDemoMsg |> dispatch )
         | DropToDeleteDemo dnd -> yield Pages.DropToDeleteDemo.view dnd (fun x -> x |> DropToDeleteDemoMsg |> dispatch )
+        | MultipleCategoriesDemo dnd -> yield Pages.MultipleCategoriesDemo.view dnd (MultipleCategoriesDemoMsg >> dispatch)
         // | HorizontalDemo dnd -> yield Pages.HorizontalDemo.view dnd (fun x -> x |> HorizontalDemoMsg |> dispatch )
     ]
 
@@ -89,6 +94,12 @@ let update msg model =
     | DropToDeleteDemoMsg msg, DropToDeleteDemo mdl ->
       let mdl, cmd = Pages.DropToDeleteDemo.update msg mdl
       { Page = DropToDeleteDemo mdl}, Cmd.map (DropToDeleteDemoMsg) cmd
+    | MultipleCategoriesDemoMsg msg, MultipleCategoriesDemo mdl ->
+      let mdl, cmd = Pages.MultipleCategoriesDemo.update msg mdl
+      { Page = MultipleCategoriesDemo mdl }, Cmd.map (MultipleCategoriesDemoMsg) cmd
+    | ToMultipleCategoriesDemo, _ ->
+      let mdl = Pages.MultipleCategoriesDemo.Model.Init()
+      { Page = MultipleCategoriesDemo mdl }, Cmd.ofMsg (MultipleCategoriesDemoMsg Pages.MultipleCategoriesDemo.Init)
     // | ToHorizontalDemo, _ ->
     //     let mdl = Pages.HorizontalDemo.init()
     //     { Page = HorizontalDemo mdl}, Cmd.ofMsg (HorizontalDemoMsg Pages.HorizontalDemo.Init)

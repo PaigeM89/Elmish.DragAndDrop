@@ -17,7 +17,7 @@ module MultiListDemo =
   }
 
   let initContent model =
-    let allContent = 
+    let allContent =
       [
         div [] [ h3 [] [str "Content 0"]; p [] [ str "This is some content" ] ]
         div [] [ h3 [] [str "Content 1"]; p [] [ str "And this is more content" ] ]
@@ -31,11 +31,10 @@ module MultiListDemo =
       ]
       |> List.mapi (fun i c -> (sprintf "content-%i" i), c)
     let m = Map.ofList allContent
-    let list1, list2 = allContent |> List.map fst |> List.splitAt 5 
+    let list1, list2 = allContent |> List.map fst |> List.splitAt 5
     let dndModel = DragAndDropModel.createWithItemsMultiList [list1;list2]
+    printfn "dnd model is %A" dndModel
     { model with ContentMap = m; DragAndDrop = dndModel }
-
-
 
   let init() = 
     {
@@ -63,21 +62,42 @@ module MultiListDemo =
         Opacity 0.2
         PointerEvents "None"
       ]
+      Placeholder = 
+        Some (
+          {
+            Styles = [
+              CSSProp.Height "100px"
+              Border "1px dashed black"
+            ]
+            Props = []
+            Content = []
+          }
+        )
       MoveThrottleTimeMs = Some (System.TimeSpan.FromMilliseconds 500.)
   }
+  let dragAndDropCategoryKey = "default-category"
 
   let createDraggable model elementId dispatch =
     let element =
       Map.tryFind elementId model.ContentMap
       |> Option.defaultValue (div [] [])
-    ElementGenerator.Create elementId [ Cursor "grab" ] [ ClassName "content" ] [ element ]
-    |> Draggable.asDragHandle model.DragAndDrop dragAndDropConfig dispatch
+    Draggable.SelfHandle
+      model.DragAndDrop
+      dragAndDropCategoryKey
+      dragAndDropConfig 
+      dispatch
+      elementId
+      div
+      [ Cursor "grab" ]
+      [ Id elementId; ClassName "content" ]
+      [ element ]
 
   let view model (dispatch : Msg -> unit) =
     let dispatch = mappedMsg >> dispatch
     let leftDropAreaProps : IHTMLProp list = [
       Style [
         MarginLeft "auto"
+        MarginRight "10px"
         Display DisplayOptions.Table
         Background "#33adff"
       ]
@@ -85,19 +105,28 @@ module MultiListDemo =
     let rightDropAreaProps : IHTMLProp list = [
       Style [
         MarginRight "auto"
+        MarginLeft "10px"
         Display DisplayOptions.Table
         Background "#3300aa"
       ]
     ]
     let dropAreaContent =
-      model.DragAndDrop.ElementIds()
-      |> List.mapi(fun index li ->
-        let props = if index % 2 = 0 then leftDropAreaProps else rightDropAreaProps
+      model.DragAndDrop.ElementIdsForCategory dragAndDropCategoryKey
+      |> List.map(fun (listIndex, li) ->
+        let props = if listIndex % 2 = 0 then leftDropAreaProps else rightDropAreaProps
         li
-        |> List.map (fun id ->
+        |> List.collect (fun (index, id) ->
           createDraggable model id dispatch
         )
-        |> DropArea.fromDraggables div props
+        |> DropArea.DropArea
+            model.DragAndDrop
+            dragAndDropCategoryKey
+            dragAndDropConfig
+            (MouseEventHandlers.Empty())
+            dispatch
+            (sprintf "drop-area-%i" listIndex)
+            div
+            props
       )
     let contextProps : IHTMLProp list = [
       Style [
@@ -106,7 +135,7 @@ module MultiListDemo =
         Display DisplayOptions.Flex
       ]
     ]
-    DragDropContext.context model.DragAndDrop dispatch div contextProps dropAreaContent
+    DragDropContext.Context model.DragAndDrop dispatch div contextProps dropAreaContent
 
   let update msg model =
     match msg with

@@ -1,5 +1,12 @@
 namespace Pages
 
+(*
+  This demo shows how you can create "handles", 
+  elements that the user will click on, to drag a parent element around.
+  This is useful if the parent element contains elements that the user will want to interact with,
+  such as input elements.
+*)
+
 module HandlesDemo =
   open Fable.React
   open Fable.React.Props
@@ -61,19 +68,28 @@ module HandlesDemo =
     Width 300
     MinHeight 50
   ]
+  let dragAndDropCategoryKey = "default-category"
 
   let inputValueLookup model elementId =
     Map.tryFind elementId model.ContentMap
     |> Option.defaultValue (("Unknown element content", "Unknown element") |> Output)
 
 
-  let generateContentType dndModel handleStyles rootElementId dispatch (ct : ContentType) =
+  let generateHandlesAndContent dndModel handleStyles rootElementId dispatch (ct : ContentType) =
+    let handleId = rootElementId + "-handle"
     match ct with
     | UserInput (value, name) ->
       [
-        DragHandle.dragHandle dndModel rootElementId (mappedMsg >> dispatch) (
-          ElementGenerator.Create (sprintf "%s-handle" rootElementId) handleStyles [] [h3 [] [ str name ]]
-        )
+        DragHandle.Handle
+                dndModel
+                dragAndDropCategoryKey
+                rootElementId
+                (mappedMsg >> dispatch)
+                div
+                [ Id handleId; Style handleStyles ] 
+                [
+                  h3 [] [ str name ]
+                ]
         input [
           Value value
           OnChange (fun ev ->
@@ -84,19 +100,31 @@ module HandlesDemo =
       ]
     | Output (value, name) ->
       [
-        DragHandle.dragHandle dndModel rootElementId (mappedMsg >> dispatch) (
-          ElementGenerator.Create (sprintf "%s-handle" rootElementId) handleStyles [] [h3 [] [ str name ]]
-        )
+        DragHandle.Handle
+          dndModel
+          dragAndDropCategoryKey
+          rootElementId
+          (mappedMsg >> dispatch)
+          div
+          [ Id handleId; Style handleStyles ] 
+          [
+            h3 [] [ str name ]
+          ]
         p [] [ str value ]
       ]
 
-
-  let createGenerators dndModel (rootElementId : string) dispatch (value : ContentType) =
+  let createContent dndModel (rootElementId : string) dispatch (value : ContentType) =
     let handleStyles = if dndModel.Moving.IsSome then [] else [ Cursor "grab" ]
-    generateContentType dndModel handleStyles rootElementId dispatch value
-    |> ElementGenerator.Create rootElementId defaultStyles []
-
-  let generateRootId id = sprintf "%s-root" id
+    generateHandlesAndContent dndModel handleStyles rootElementId dispatch value
+    |> Draggable.InnerHandle
+            dndModel
+            dragAndDropCategoryKey
+            dragAndDropConfig
+            (mappedMsg >> dispatch)
+            rootElementId
+            div 
+            defaultStyles
+            [ Id rootElementId ]
 
   let view model (dispatch : Msg -> unit) =
     let dropAreaProps : IHTMLProp list = [
@@ -108,24 +136,28 @@ module HandlesDemo =
       ]
     ]
     let dropAreaContent =
-      model.DragAndDrop.ElementIds()
-      |> List.map (fun li ->
-        li
-        |> List.map (fun (rootElementId) ->
-            inputValueLookup model rootElementId
-            |> createGenerators model.DragAndDrop rootElementId dispatch
-            |> Draggable.draggable model.DragAndDrop dragAndDropConfig (mappedMsg >> dispatch)
-        )
+      model.DragAndDrop.ElementIdsForCategorySingleList dragAndDropCategoryKey
+      |> List.collect (fun (rootElementId) ->
+        inputValueLookup model rootElementId
+        |> createContent model.DragAndDrop rootElementId dispatch
       )
-      |> List.concat
-      |> DropArea.fromDraggables div dropAreaProps
-    DragDropContext.context model.DragAndDrop (mappedMsg >> dispatch)
+      |> DropArea.DropArea 
+          model.DragAndDrop
+          dragAndDropCategoryKey
+          dragAndDropConfig
+          (MouseEventHandlers.Empty())
+          (mappedMsg >> dispatch)
+          "drop-area"
+          div
+          dropAreaProps
+    DragDropContext.Context model.DragAndDrop (mappedMsg >> dispatch)
       div [
         Style [
           Background "#0066ff"
           Width "100%"
         ]
       ][
+        p [] [ str "Drag an element by the title. Interact with the elements inside any list item as normal." ]
         dropAreaContent
       ]
 
@@ -135,9 +167,9 @@ module HandlesDemo =
       let content = [
         for i in 1..8 do 
           if i % 2 = 0 then
-            yield (sprintf "input-%i" i |> generateRootId), UserInput ("", (sprintf "Input %i" i))
+            yield (sprintf "input-%i" i), UserInput ("", (sprintf "Input %i" i))
           else
-            yield (sprintf "output-%i" i |> generateRootId), Output (sprintf "Generated output #%i" i, sprintf "Output %i" i)
+            yield (sprintf "output-%i" i), Output (sprintf "Generated output #%i" i, sprintf "Output %i" i)
       ]
       let elementIds = content |> List.map (fst)
       let m = content |> Map.ofList

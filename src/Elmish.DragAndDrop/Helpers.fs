@@ -55,6 +55,10 @@ module List =
 module HelperTypes =
   type ElementId = string
   type DraggableId = string
+  type DropAreaId = string
+  type ListIndex = int
+  type Index = int
+  type DragAndDropCategoryKey = string
 
   type Coords = { x : float; y : float}
       with
@@ -72,12 +76,11 @@ module HelperTypes =
   let coords x y = { x = x; y = y }
   let fromME (ev : Browser.Types.MouseEvent) = { x = ev.clientX; y = ev.clientY }
 
-  type ListIndex = int
-  type Index = int
-  type ItemLocation = ListIndex * Index * ElementId
-  let locListIndex = fun (x, _, _) -> x
-  let locIndex = fun (_, x, _) -> x
-  let locId = fun (_, _, id) -> id
+  type ItemLocation = DragAndDropCategoryKey * ListIndex * Index * ElementId
+  let locKey = fun (k, _, _, _) -> k
+  let locListIndex = fun (_, x, _, _) -> x
+  let locIndex = fun (_, _, x, _) -> x
+  let locId = fun (_, _, _, id) -> id
   let createLoc a b c = (a, b, c)
 
   let tryGetElementCoords elementId = 
@@ -98,13 +101,18 @@ module HelperTypes =
       StartCoords = s
       ElementId = ele
     }
+  
+  [<Literal>]
+  let DefaultCategory :DragAndDropCategoryKey = "default-category"
 
   type MovingStatus = {
       Slide : Slide option
       StartLocation : ItemLocation
+      CategoryKey : DragAndDropCategoryKey
     } with
-        member this.setSlide (slide : Slide option) = { this with Slide = slide }
-        static member Init loc = { Slide = None; StartLocation = loc }
+        static member Init key loc =
+          { CategoryKey = key; StartLocation = loc; Slide = None }
+
 
 module BrowserHelpers =
   open HelperTypes
@@ -113,6 +121,14 @@ module BrowserHelpers =
       let doc = Browser.Dom.document
       let ele = doc.getElementById(id)
       ele
+
+  let getLeftTopForElement id =
+    let ele = getDraggedElement id
+    let rect = ele.getBoundingClientRect()
+    let x = rect.left
+    let y = rect.top
+    x, y
+  
   let getOffset ev id =
     let ele = getDraggedElement id
     let rect = ele.getBoundingClientRect()

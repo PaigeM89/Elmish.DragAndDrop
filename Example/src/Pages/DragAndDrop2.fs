@@ -1,6 +1,6 @@
 namespace Pages
 
-module CollectionDragAndDrop2 =
+module CollectionDragAndDrop =
   open Feliz
   open Fable.React
   open Fable.React.Props
