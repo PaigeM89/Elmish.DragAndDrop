@@ -272,10 +272,6 @@ module MultipleCategoriesDemo =
       match msg with
       | OnDrag _ -> ()
       | _ -> printfn "Handling dnd msg %A" msg
-      // let bmMdl, bmCmd = dragAndDropUpdate msg bmCategory model.DragAndDrop
-      // let dmMdl, dmCmd = dragAndDropUpdate msg dmCategory model.DragAndDrop
-      // let topMdl, topCmd = dragAndDropUpdate msg topTenCategory model.DragAndDrop
       let dndMdl, cmd = dragAndDropUpdate msg model.DragAndDrop
       let model = { model with DragAndDrop = dndMdl }
-      //let cmd = [ bmCmd; dmCmd; topCmd ] |> List.map (Cmd.map DndMsg) |> Cmd.batch
       model, Cmd.map DndMsg cmd
