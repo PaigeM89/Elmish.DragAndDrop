@@ -109,13 +109,9 @@ module HelperTypes =
       Slide : Slide option
       StartLocation : ItemLocation
       CategoryKey : DragAndDropCategoryKey
-      // CurrentDropArea : CurrentDropArea option
     } with
         static member Init key loc =
           { CategoryKey = key; StartLocation = loc; Slide = None }
-        // member this.SetSlide (slide : Slide option) = { this with Slide = slide }
-        // static member Init loc =
-        //  { Slide = None; StartLocation = loc; CurrentDropArea = Some (locListIndex loc, None) }
 
 
 module BrowserHelpers =

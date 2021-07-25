@@ -75,55 +75,6 @@ module HandlesDemo =
     |> Option.defaultValue (("Unknown element content", "Unknown element") |> Output)
 
 
-  let generateContentType dndModel handleStyles rootElementId dispatch (ct : ContentType) =
-    let handleId = rootElementId + "-handle"
-    match ct with
-    | UserInput (value, name) ->
-      [
-        DragHandle.Handle
-                dndModel
-                dragAndDropCategoryKey
-                rootElementId
-                (mappedMsg >> dispatch)
-                div
-                [ Id handleId; Style handleStyles ] 
-                [
-                  h3 [] [ str name ]
-                ]
-        input [
-          Value value
-          OnChange (fun ev ->
-            let v = ev.Value
-            // we track the current state of user input by the root draggable's ID, not the input id (which we dont set)
-            InputChange (rootElementId, v) |> (dispatch))
-        ]
-      ]
-      |> Draggable.InnerHandle
-            dndModel
-            dragAndDropCategoryKey
-            dragAndDropConfig
-            (mappedMsg >> dispatch)
-            rootElementId
-            div 
-            []
-            [ Id rootElementId ]
-    | Output (value, name) ->
-      [
-        yield! 
-          Draggable.SelfHandle
-            dndModel
-            dragAndDropCategoryKey
-            dragAndDropConfig
-            (mappedMsg >> dispatch)
-            rootElementId
-            div
-            handleStyles
-            [ Id handleId ] [
-              h3 [] [ str name ]
-            ]
-        p [] [ str value ]
-      ]
-
   let generateHandlesAndContent dndModel handleStyles rootElementId dispatch (ct : ContentType) =
     let handleId = rootElementId + "-handle"
     match ct with

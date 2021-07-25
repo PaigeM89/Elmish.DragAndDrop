@@ -4,7 +4,7 @@ namespace Pages
   Depending on your application, you could end up with more than 1 drag & drop model instance. This demo shows how to set that up.
 *)
 
-module MultipleModelsDemo =
+module MultipleCategoriesDemo =
   open System
   open Fable.React
   open Fable.React.Props

@@ -105,7 +105,6 @@ module DropToDeleteDemo =
           OnHoverEnter = Some onHover
           OnDrop = Some onDrop
       }
-    printfn "model hover state is %A" model.DeleteAction
     let styles = [
       MarginRight "auto"
       MarginLeft "auto"

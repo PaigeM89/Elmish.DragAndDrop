@@ -36,35 +36,53 @@ You will need a way to determine which content to render based on which element 
 
 3. Create your `Draggables`. These consist of 2 parts: (1) the `Draggable` itself, the element that will move around the screen and be moved to different locations in your collection(s); (2) the `DragHandle`, the part of the element your user will click on to do these actions. In many cases, the entire `Draggable` will be a drag handle, but if your elements contain things the user may want to interact with, such as an input box or a checkbox, then you'll want to use define a specific `DragHandle`.
 
-The `Draggable` will need the `DragHandle` to be part of the elements given to it, or it can be built as a `DragHandle` (making the whole element a drag handle). If no drag handle is provided, the element will not be draggable, though it will still be movable based on other items moving it out of the way to accomodate it dropping. A `DragHandle` must have a reference to the `id` of the `Draggable`. 
+If the whole element is a handle for itself, then `Draggable.SelfHandle` takes care of all your needs. If you want a specific part of the element to be the handle by which the element is dragged, then you want to create a `DragHandle.Handle` element, and put that element inside a `Draggable.InnerHandle`. The `DragHandle` will need to reference the (unique) id of the `Draggable` it drags.
 
 Additionally, you'll want to configure your `DragAndDropConfig` at the scope of any specific drag & drop, to define additional styles or properties to put on your various drag & drop elements.
 
+Also note that when creating a draggable, you'll need to specify the `Category` it belongs to. This allows you to create mutually exclusive categories in your drag & drop model that items cannot move between.
+
 ```fsharp
-      let dragAndDropConfig = {
-          DragAndDropConfig.Empty() with
-              DraggedElementStyles = Some [
-                  MarginLeft -130.
-                  MarginTop -50.
-                  Opacity 0.8
-                  Position PositionOptions.Fixed
-                  Cursor "grabbing"
-                  Background "#00ffff"
-              ]
-              HoverPreviewElementStyles = Some [
-                  Opacity 0.2
-              ]
-        }
+    let dragAndDropConfig = {
+        DragAndDropConfig.Empty() with
+            DraggedElementStyles = Some [
+                MarginLeft -130.
+                MarginTop -50.
+                Opacity 0.8
+                Position PositionOptions.Fixed
+                Cursor "grabbing"
+                Background "#00ffff"
+            ]
+            HoverPreviewElementStyles = Some [
+                Opacity 0.2
+            ]
+      }
+
+    let dragAndDropCategoryKey = "default-category"
 
     let createDragHandle dndModel draggableId dispatch handleContent : ReactElement =
         let handleId = draggableId + "-handle"
-        ElementGenerator.Create handleId [] [] handleContent
-        |> DragHandle.dragHandle dndModel draggableId (mappedMsg >> dispatch)
+        DragHandle.Handle
+                dndModel
+                dragAndDropCategoryKey
+                draggableId
+                (mappedMsg >> dispatch)
+                div
+                [ Id handleId ] 
+                handleContent
 
     let createDraggable dndModel draggableId dispatch handleContent content =
         let handle = createDragHandle dndModel draggableId dispatch handleContent
-        ElementGenerator.Create draggableId [] [] [ handle; content ]
-        |> Draggable.draggable dndModel dragAndDropConfig (mappedMsg >> dispatch)
+        Draggable.InnerHandle
+            dndModel
+            dragAndDropCategoryKey
+            dragAndDropConfig
+            (mappedMsg >> dispatch)
+            draggableId
+            div
+            []
+            [ Id draggableId ] //note that you must set the Id.
+            ( handle :: content )
 ```
 
 4. Define one or more `DropArea` elements for your `Draggables` to live. 
@@ -80,20 +98,39 @@ Additionally, you'll want to configure your `DragAndDropConfig` at the scope of 
         let content = model.ContentMap |> Map.find rootElementId
         createDraggable dndModel rootelementId dispatch handleContent content
       )
-    let dropArea = DropArea.fromDraggables div [] draggables
+    let dropArea =
+      DropArea.DropArea
+        model.DragAndDrop
+        dragAndDropCategoryKey
+        dragAndDropConfig
+        (MouseEventHandlers.Empty())
+        (mappedMsg >> dispatch)
+        "drop-area"
+        div
+        []
+        draggables
+
 ```
 
 With all that, you're good to go! There's a fair bit of setup, which arises from the amount of configurability this library aims to achieve.
 
 See the Examples folder for complete, working examples of different types of setups.
 
-### Element Generators
-
-This is a building block used to specify all the ingredients of a `ReactElement`, so that additional styles or properties can be added as needed before it is turned into an element.
-
 ### Drop Areas As Buckets
 
-Sometimes you want a drop area that accepts an item and invokes a function, but doesn't keep the item around. An example of this might be dragging an item to delete it, or dragging an item over some element to create some event (perhaps creating a new element in the process). To do this, use `DropArea.asBucket`, which accepts a function for `onHover` and `onDrop`, and will invoke those functions during a hover and a drop.
+Sometimes you want a drop area that accepts an item and invokes a function, but doesn't keep the item around. An example of this might be dragging an item to delete it, or dragging an item over some element to create some event (perhaps creating a new element in the process). To do this, create a drop area as normal, but supply custom `MouseEventHandlers` to handle some of the events:
+
+```fsharp
+let onHover = (fun _ id _ -> printfn "on hover for drop area bucket %A triggered" id; SomeMsg id |> dispatch)
+let onDrop = (fun _ id -> printfn "on drop for drop area bucket %A triggered" id; SomeOtherMsg id |> dispatch )
+let mouseEventFuncs =
+  { MouseEventHandlers.Empty() with
+      OnHoverEnter = Some onHover
+      OnDrop = Some onDrop
+  }
+```
+
+This sets handlers to listen for those events on the `DropArea` you configure, whereas normally those listeners only exist on draggables. Note that you can use `MouseEventHandlers` on _any_ `DropArea`, even if it has `Draggables` inside it.
 
 See the "Drag To Delete" example to see this in action.
 

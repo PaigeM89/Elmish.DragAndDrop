@@ -27,34 +27,13 @@ module Types =
 
   type ItemTree = Map<DragAndDropCategoryKey, Map<ListIndex, (Index * ElementId) list>>
 
-
   type DragAndDropModel = {
     Cursor : Coords
     Moving: MovingStatus option
     Offset : Coords option
-    // Items: Map<DragAndDropCategoryKey, ItemLocation list list>
-    // Items : ItemLocation list list
     ItemTree : ItemTree
     ThrottleState : Map<string, Throttle.Status>
   } with
-      // member this.ElementIds() =
-      //   this.Items
-      //   //|> Map.toList
-      //   |> List.map(fun li -> li |> List.map locId)//(fun li2 -> li2 |> List.map locId ))// (fun (_, _, _, id) -> id ) ) )
-      
-      // member this.ElementIdsSingleList() =
-      //   this.Items
-      //   //|> Map.toList
-      //   |> List.map(fun li -> li |> List.map locId) //List.collect(fun li2 -> li2 |> List.map (fun (_, _, _, id) -> id)))
-      
-      // member this.ElementIdsForCategory key =
-      //   this.Items
-      //   // |> Map.tryFind key
-      //   // |> Option.defaultValue [[]]
-      //   |> List.map (fun locs -> locs |> List.map (fun (key, _, _, id) -> id))
-
-      // member this.ElementIdsForCategoryCollected key =
-      //   this.ElementIdsForCategory key |> List.concat
 
       member this.ElementIds() =
         this.ItemTree
@@ -84,7 +63,6 @@ module Types =
         Cursor = { x = 0.; y = 0. }
         Moving = None
         Offset = None
-        // Items = [] // Map.empty
         ItemTree = Map.empty
         ThrottleState = Map.empty
       }
@@ -129,10 +107,6 @@ module Types =
     type InitialIds = string list list
 
     let getItemsForCategoryOrEmpty key model =
-      // model.Items |> Map.tryFind key |> Option.defaultValue [[]]
-      // model.ItemTree |> List.filter (fun li -> 
-      //   li |> List.filter (fun (k, _, _, _) -> k = key)
-      // )
       model.ItemTree |> Map.tryFind key |> Option.defaultValue Map.empty
 
     /// Returns the status of the drag, if any. If there is an active drag, the element Id will be returned too.
@@ -142,8 +116,6 @@ module Types =
       | None -> NoActiveDrag
 
     let createWithCategories (keys : DragAndDropCategoryKey list) =
-      // let emptyLocs : ItemLocation list list = [[]]
-      // let itemMap = keys |> List.map (fun k -> k, emptyLocs) |> Map.ofList
       let itemMap = keys |> List.map (fun k -> k, Map.empty) |> Map.ofList
       { DragAndDropModel.Empty() with ItemTree = itemMap }
 
@@ -176,28 +148,6 @@ module Types =
       let itemMap = [HelperTypes.DefaultCategory, itemsWithLocs] |> Map.ofList
       { DragAndDropModel.Empty() with ItemTree = itemMap }
 
-    /// Looks up the listindex, index of an item by Id, or None if that Id is not found.
-    // let findItemById key (itemId : string) model =
-    //   model.ItemTree
-    //   |> Map.tryFind key
-    //   |> Option.defaultValue Map.empty
-    //   |> Map.toList
-    //   |> List.
-    //   // |> Option.defaultValue [[]]
-    //   // |> List.tryPick(fun li ->
-    //   //   li
-    //   //   |> List.tryPick (fun (listIndex, index, elementId) -> if itemId = elementId then Some (listIndex, index) else None)
-    //   // )
-
-    // let findItemByIdDefaultCategory (itemId : string) model =
-    //   model.Items
-    //   |> Map.tryFind DefaultCategory
-    //   |> Option.defaultValue [[]]
-    //   |> List.tryPick(fun li ->
-    //     li
-    //     |> List.tryPick (fun (listIndex, index, elementId) -> if itemId = elementId then Some (listIndex, index) else None)
-    //   )
-
     /// Inserts a new item at the specified indexes. If a list does not exist at the list index, 
     /// a new list will be created at the last index.
     let insertNewItemAt key listIndex itemIndex (itemId : string) model =
@@ -222,27 +172,7 @@ module Types =
         let indexMap = [listIndex, ([itemIndex, itemId])] |> Map.ofList
         let items = model.ItemTree |> Map.add key indexMap
         { model with ItemTree = items }
-      
-      
-      //let loc = (listIndex, itemIndex, itemId)
-      // let loc = itemIndex, itemId
-      // let lio = getItemsForCategoryOrEmpty key model |> Map.tryFind listIndex //|> List.tryItem listIndex
-      // match lio with
-      // | Some li ->
-      //   let li = List.insertAt loc itemIndex li
-      //   let lis = getItemsForCategoryOrEmpty key model |> Map.add listIndex li //|> List.replaceAt li listIndex
-      //   let allItemLocs = getUpdatedItemLocations lis
-      //   replaceItemsLocationsAtKey model key allItemLocs
-      //   // { model with Items = allItemLocs }
-      // | None ->
-      //   let items = getItemsForCategoryOrEmpty key model
-      //   let newListIndex = items.Length
-      //   let li = [(newListIndex, 0, itemId)]
-      //   let lis =items @ [li]
-      //   let allItemLocs = getUpdatedItemLocations lis
-      //   replaceItemsLocationsAtKey model key allItemLocs
-        // { model with Items = allItemLocs }
-    
+
     /// Inserts a new item at the head of the given list index. If there is no list at that list index,
     /// a new list will be created at the last list index, with this item as the only item.
     let insertNewItemAtHead key listIndex item model = insertNewItemAt key listIndex 0 item model
@@ -258,14 +188,6 @@ module Types =
         { model with ItemTree = items }
       | None ->
         model
-      // match List.tryItem listIndex items with
-      // | Some li ->
-      //   let li = List.removeAt itemIndex li
-      //   let lis = List.replaceAt li listIndex items
-      //   let allItemLocs = getUpdatedItemLocations lis
-      //   replaceItemsLocationsAtKey model key allItemLocs
-      //   // { model with Items = allItemLocs }
-      // | None -> model
 
     /// Removes the item by id. If the id is not found, nothing happens.
     let removeItem key itemId model =
@@ -281,15 +203,6 @@ module Types =
         |> Map.ofList
       let m = Map.add key items model.ItemTree
       { model with ItemTree = m }
-      // let picked = 
-      //   //model.Items
-      //   getItemsForCategoryOrEmpty key model
-      //   |> List.concat
-      //   |> List.tryFind(fun (_, _, item) -> item = itemId)
-      // match picked with
-      // | Some (listIndex, index, _) ->
-      //   removeItemAt key listIndex index model
-      // | None -> model
 
     /// Replaces the item at the given list index, item index. If the previous item is not found, the item is simply inserted.
     /// If the list does not exist at the given list index, a new list is created with this item as the only item.
@@ -298,9 +211,6 @@ module Types =
       |> removeItemAt key listIndex (itemIndex + 1)
 
     let replaceItemsForCategory categoryKey model items =
-    //   let items' = model.Items |> Map.add categoryKey items
-    //  { model with Items = items' }
-      //let items' = model.Items |> List.filter (fun li -> )
       let it = model.ItemTree |> Map.add categoryKey items
       { model with ItemTree = it }
 
@@ -335,12 +245,6 @@ module Types =
   // ************************************************************************************
   // OTHER TYPES
   // ************************************************************************************
-
-  // let internal getLocationForElement key itemId model = 
-  //   DragAndDropModel.getItemsForCategoryOrEmpty key model
-  //   |> List.map (fun li -> li |> List.tryFind (fun (_, _, id) -> id = itemId))
-  //   |> List.choose id
-  //   |> List.tryHead
 
   let internal getLocationForElement key itemId model =
     match Map.tryFind key model.ItemTree with
