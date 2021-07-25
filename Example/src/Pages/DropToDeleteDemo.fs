@@ -79,8 +79,6 @@ module DropToDeleteDemo =
       div
       [ Id handleId ]
       [ element ]
-    // ElementGenerator.Create handleId [ Cursor "grab" ] [] [element]
-    // |> DragHandle.dragHandle model.DragAndDrop elementId dispatch
 
   let createDraggable model rootId dispatch =
     let handle = createDragHandle model rootId dispatch
@@ -94,8 +92,6 @@ module DropToDeleteDemo =
       []
       [ ClassName "content"; Id rootId ]
       [ handle ]
-    // ElementGenerator.Create rootId [] [ ClassName "content" ] [ handle ]
-    // |> Draggable.draggable model.DragAndDrop dragAndDropConfig dispatch
 
   let createDropBucket model dispatch =
     let onHover = (fun _ id _ -> printfn "on hover for delete bucket %A triggered" id; HoverOverDelete id |> dispatch)
@@ -127,10 +123,6 @@ module DropToDeleteDemo =
         h2 [] [ str "Drag here to delete!" ]
       ]
 
-
-    // ElementGenerator.Create "delete-bucket" styles [] [ h2 [] [ str "Drag here to delete!" ] ]
-    // |> DropArea.asBucket model.DragAndDrop dragAndDropConfig onHover onDrop (mappedMsg >> dispatch)
-
   let view model (dispatch : Msg -> unit) =
     let dropAreaProps = [ 
       Style [
@@ -157,7 +149,6 @@ module DropToDeleteDemo =
             "drop-area"
             div
             dropAreaProps
-        // |> DropArea.fromDraggables div dropAreaProps
     let props : IHTMLProp list = [ 
       ClassName "wrapper"
       Style [

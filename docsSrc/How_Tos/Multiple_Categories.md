@@ -1,33 +1,15 @@
 # Multiple Categories
 
-If you have multiple categories and you want to drag & drop elements between those categories, simply send multiple lists to the `DragAndDrop` model.
+If you have multiple categories and you want to drag & drop elements between those categories, simply change the `dragAndDropCategoryKey` passed in when building a `Draggable` and a `DropArea`:
 
-```Fsharp
-    let content = [
-      [ "item 1"; "item 2"; "item 3" ]
-      [ "item 4"; "item 5" ]
-      [ "item 6"]
-    ]
-    /// create a drag and drop model with 3 categories
-    let dndModel = DragAndDropModel.createWithItemsMultiList content
+```
+DragHandle.Handle Handle model categoryKey draggableId dispatch tag props content 
+
+Draggable.SelfHandle model categoryKey config dispatch id tag styles props content
+
+Draggable.InnerHandle model categoryKey config dispatch id tag styles props content
+
+DropArea.DropArea model categoryKey config mouseEventHandlers dispatch id tag props content
 ```
 
-Note that you'll need to define multiple `DropAreas` for these elements to live in. If possible, it's recommended to dynamically generate the drop areas based on the ElementIds given:
-
-```Fsharp
-    model.DragAndDrop.ElementIds()
-    |> List.mapi(fun index li ->
-      let props = if index % 2 = 0 then leftDropAreaProps else rightDropAreaProps
-      li
-      |> List.map (fun id ->
-        createDraggable model id dispatch
-      )
-      |> DropArea.fromDraggables div props
-    )
-```
-
-This, however, comes at the cost of losing categories when they lose all their elements. This could potentially even leave you with only 1 category.
-
-# Exluding Items From Categories
-
-There is a WIP of this concept in `MultipleDragTypes.fs`.
+Note that the `DragAndDropModel` and the `DragDropContext` do not need to specify the category. They both work for items in _every_ category; that is, they should be shared for every `DragAndDrop` instance in your application, and use the category to know when elements should not interact with each other.

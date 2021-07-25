@@ -8,7 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Unreleased
 
 ### Added
-- 
+- You can now separate Drag And Drop categories to create different drag & drop sections that do not interact with each other.
+
+### Changed
+- The entire API for drag handles, draggables, drop areas, and contexts has been changed.
 
 ## [0.3.0] - 2021-06-13
 
