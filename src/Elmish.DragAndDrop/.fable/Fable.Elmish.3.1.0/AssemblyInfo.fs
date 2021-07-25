@@ -2,7 +2,7 @@
 namespace System
 open System.Reflection
 
-[<assembly: AssemblyTitleAttribute("Elmish.DragAndDrop")>]
+[<assembly: AssemblyTitleAttribute("Fable.Elmish")>]
 [<assembly: AssemblyProductAttribute("Elmish.DragAndDrop")>]
 [<assembly: AssemblyVersionAttribute("0.4.0")>]
 [<assembly: AssemblyMetadataAttribute("ReleaseDate","2021-07-25T00:00:00.0000000-04:00")>]
@@ -13,7 +13,7 @@ open System.Reflection
 do ()
 
 module internal AssemblyVersionInformation =
-    let [<Literal>] AssemblyTitle = "Elmish.DragAndDrop"
+    let [<Literal>] AssemblyTitle = "Fable.Elmish"
     let [<Literal>] AssemblyProduct = "Elmish.DragAndDrop"
     let [<Literal>] AssemblyVersion = "0.4.0"
     let [<Literal>] AssemblyMetadata_ReleaseDate = "2021-07-25T00:00:00.0000000-04:00"
