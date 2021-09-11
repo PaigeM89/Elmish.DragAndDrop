@@ -409,21 +409,22 @@ let dotnetBuild ctx =
         }) sln
 
 let fsharpAnalyzers _ =
-    let argParser = ArgumentParser.Create<FSharpAnalyzers.Arguments>(programName = "fsharp-analyzers")
-    !! srcGlob
-    |> Seq.iter(fun proj ->
-        let args  =
-            [
-                FSharpAnalyzers.Analyzers_Path (__SOURCE_DIRECTORY__ </> "packages/analyzers")
-                FSharpAnalyzers.Arguments.Project proj
-                FSharpAnalyzers.Arguments.Fail_On_Warnings [
-                    "BDH0002"
-                ]
-                FSharpAnalyzers.Verbose
-            ]
-            |> argParser.PrintCommandLineArgumentsFlat
-        dotnet.fsharpAnalyzer id args
-    )
+  ()
+    // let argParser = ArgumentParser.Create<FSharpAnalyzers.Arguments>(programName = "fsharp-analyzers")
+    // !! srcGlob
+    // |> Seq.iter(fun proj ->
+    //     let args  =
+    //         [
+    //             FSharpAnalyzers.Analyzers_Path (__SOURCE_DIRECTORY__ </> "packages/analyzers")
+    //             FSharpAnalyzers.Arguments.Project proj
+    //             FSharpAnalyzers.Arguments.Fail_On_Warnings [
+    //                 "BDH0002"
+    //             ]
+    //             FSharpAnalyzers.Verbose
+    //         ]
+    //         |> argParser.PrintCommandLineArgumentsFlat
+    //     dotnet.fsharpAnalyzer id args
+    // )
 
 let dotnetTest ctx =
     let excludeCoverage =

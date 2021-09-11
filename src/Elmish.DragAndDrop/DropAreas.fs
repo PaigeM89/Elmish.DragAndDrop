@@ -111,8 +111,6 @@ module DropAreas =
             indexMap
             |> Map.add startListIndex newStartList
             |> Map.add insertListIndex newInsertList
-            //|> List.replaceAt newStartList startListIndex
-            //|> List.replaceAt newInsertList insertListIndex
           | None ->
             JS.console.error("Unreachable state: cannot find item in list at index", startListIndex, startIndex)
             indexMap
@@ -123,6 +121,8 @@ module DropAreas =
           JS.console.error("Unreachable state: cannot find list at index", insertListIndex)
           indexMap
 
+  /// Returns the updated drag & drop model and any commands; any commands returned are related to Throttling, 
+  /// and Drag & Drop does not return any commands that will kick off another Drag & Drop update.
   let dragAndDropUpdate msg (model : DragAndDropModel) =
     match msg with
     | DragStart (loc, startCoords, offset) ->
@@ -145,6 +145,7 @@ module DropAreas =
       | None ->
         model, Cmd.none
 
+    // todo: remove this if it's not needed.
     | DragOverNonDraggable (key, listIndex, dropAreaId) ->
       model, Cmd.none
 

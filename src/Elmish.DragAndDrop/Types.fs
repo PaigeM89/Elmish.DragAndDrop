@@ -1,5 +1,6 @@
 namespace Elmish.DragAndDrop
 
+open System
 open Elmish
 open Elmish.DragAndDropHelpers
 open Elmish.DragAndDropHelpers.HelperTypes
@@ -41,7 +42,12 @@ module Types =
     ItemTree : ItemTree
     ThrottleState : Map<string, Throttle.Status>
   } with
+      /// returns TRUE if there is a current drag in progress.
+      member this.IsDragging() = this.Moving.IsSome
 
+      /// Returns the element Ids in this drag & drop across ALL categories,
+      /// aggregated by list index. You probably want to use `ElementIdsForCategory` instead,
+      /// unless you only have a single category.
       member this.ElementIds() =
         this.ItemTree
         |> Map.toList
@@ -51,17 +57,22 @@ module Types =
           |> List.map (fun (listIndex, li) -> listIndex, (li |> List.map snd))
         )
 
+      /// Returns the elementIds in a single list across ALL categories. You probably want to 
+      /// use `ElementIdsForCategorySingleList` instead, unless you only have a single category.
+      [<Obsolete("Use `ElementIdsForCategory` instead.")>]
       member this.ElementIdsSingleList() =
         this.ItemTree
         |> Map.toList
         |> List.collect (fun (key, m) -> m |> Map.toList |> List.collect (fun (_, li) -> li |> List.map snd))
 
+      /// Returns the list of list index, lists of (index, elementid) for the given category key.
       member this.ElementIdsForCategory key =
         this.ItemTree
         |> Map.tryFind key
         |> Option.map Map.toList
         |> Option.defaultValue []
 
+      /// Returns the elementIds for the given category key aggregated into a single list.
       member this.ElementIdsForCategorySingleList key =
         this.ElementIdsForCategory key
         |> List.collect (fun (_, li) -> li |> List.map snd )
@@ -124,10 +135,23 @@ module Types =
       | Some { StartLocation = (key, _, _, elementId) } -> ActiveDrag (key, elementId)
       | None -> NoActiveDrag
 
+    /// Creates an empty Drag & Drop model with the pre-set categories in the list
+    /// Note that this does not later prevent categories from being added or dropped.
     let createWithCategories (keys : DragAndDropCategoryKey list) =
       let itemMap = keys |> List.map (fun k -> k, Map.empty) |> Map.ofList
       { DragAndDropModel.Empty() with ItemTree = itemMap }
 
+    /// Creates a Drag & Drop model with the given categories, where each 
+    /// category is associated with a list of list of element Ids. If the drag & drop category is intended
+    /// to be used as a single list (not a multi-drop-area list), then simply supply
+    /// a list of element Ids as the only element in a list.
+    /// 
+    /// Example: 
+    /// ```[
+    ///   ("categoryKey", [ [ "elementOne"; "elementTwo" ] ]); 
+    ///   ("otherCategoryKey", [ [ "elementThree" ]; [ "elementFour" ] ] )
+    ///  ]
+    /// ```
     let createWithCategoriesAndItems (values : (DragAndDropCategoryKey * InitialIds) list ) =
       let itemMap  = 
         values
@@ -141,7 +165,8 @@ module Types =
         |> Map.ofList
       { DragAndDropModel.Empty() with ItemTree = itemMap }
 
-    /// Creates a new Model initialied with items in multiple lists
+    /// Creates a new Model initialied with items in multiple lists using the default category.
+    /// This is useful if you do not plan on having multiple categories.
     let createWithItemsMultiList (items : ElementId list list) =
       let itemMap =
         let mappedLists = 
@@ -151,7 +176,8 @@ module Types =
         [(DefaultCategory, mappedLists)] |> Map.ofList
       { DragAndDropModel.Empty() with ItemTree = itemMap }
 
-    /// Creates a new Model initialized with items in a single list
+    /// Creates a new Model initialized with items in a single list.
+    /// This is useful if you do not plan on having multiple categories.
     let createWithItems (items : ElementId list) =
       let itemsWithLocs = initItemLocationsForTree [items]
       let itemMap = [HelperTypes.DefaultCategory, itemsWithLocs] |> Map.ofList
@@ -219,6 +245,7 @@ module Types =
       insertNewItemAt key listIndex itemIndex newItem model
       |> removeItemAt key listIndex (itemIndex + 1)
 
+    /// Replaces all items for a given category with the given item map.
     let replaceItemsForCategory categoryKey model items =
       let it = model.ItemTree |> Map.add categoryKey items
       { model with ItemTree = it }
